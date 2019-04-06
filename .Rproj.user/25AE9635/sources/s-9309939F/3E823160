@@ -1,0 +1,22 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1554585048393.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "3425894719",
+    "id" : "3E823160",
+    "lastKnownWriteTime" : 1554588920,
+    "last_content_update" : 1554588920031,
+    "path" : "~/seasonality/R/frequency_utils.R",
+    "project_path" : "R/frequency_utils.R",
+    "properties" : {
+        "cursorPosition" : "29,40",
+        "scrollLine" : "10"
+    },
+    "relative_order" : 10,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}

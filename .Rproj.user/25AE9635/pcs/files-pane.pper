@@ -1,0 +1,9 @@
+{
+    "path" : "~/seasonality",
+    "sortOrder" : [
+        {
+            "ascending" : true,
+            "columnIndex" : 2
+        }
+    ]
+}

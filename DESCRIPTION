@@ -1,0 +1,27 @@
+Package: seasonality
+Type: Package
+Title: Seasonal adjustment of high frequency and irregular frequency data
+Version: 0.0.1
+Date: 2019-04-06
+Authors@R: c(
+  person("Seth", "Leonard", email = "seth@srlanalytics.com", role = c("aut", "cre")),
+  person("Christoph", "Sax", role = "aut")
+  )
+Description: Estimate seasonality for univariate time series and return seasonally adjusted data and adjustment factors
+BugReports: https://github.com/srlanalytics/seasonality
+License: MIT + file LICENSE
+Imports:
+  Rcpp (>= 0.12.13),
+  RcppArmadillo (>= 0.7.900.2.0),
+  data.table
+Suggests:
+  testthat,
+  tsbox,
+  seasonal,
+  knitr,
+  rmarkdown
+LinkingTo: Rcpp, RcppArmadillo
+RoxygenNote: 6.1.1
+LazyData: true
+Encoding: UTF-8
+VignetteBuilder: knitr

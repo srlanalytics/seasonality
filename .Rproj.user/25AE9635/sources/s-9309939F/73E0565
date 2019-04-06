@@ -1,0 +1,22 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1554583509190.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "1916541238",
+    "id" : "73E0565",
+    "lastKnownWriteTime" : 1554583726,
+    "last_content_update" : 1554583726904,
+    "path" : "~/seasonality/R/SA_utils.R",
+    "project_path" : "R/SA_utils.R",
+    "properties" : {
+        "cursorPosition" : "53,0",
+        "scrollLine" : "24"
+    },
+    "relative_order" : 3,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}
