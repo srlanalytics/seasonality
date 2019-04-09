@@ -1,0 +1,14 @@
+.Rproj.user
+*.Rproj
+seasonality.Rproj
+.Rhistory
+.RData
+.Ruserdata
+src/*.o
+src/*.so
+src/*.dll
+src/bdfm.o
+src/RcppExports.o
+src/bdfm.dll
+*.o
+
