@@ -43,7 +43,7 @@ weekdays_in_month <- function(date){
 }
 
 # auto detect frequency
-get_freq_dt <- function(y, dates) {
+get_freq_dates <- function(y, dates) {
   out <- median(diff(dates[which(!is.na(y))]))
 }
 

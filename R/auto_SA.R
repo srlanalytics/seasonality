@@ -271,7 +271,7 @@ select_SARMA <- function(y,dates){
 
 auto_SA_core <- function(data, dates, forecast = FALSE){
 
-  take_logs <- all(data>0)
+  take_logs <- all(data[is.finite(data)]>0)
   if(take_logs){
     data <- log(data)
   }
