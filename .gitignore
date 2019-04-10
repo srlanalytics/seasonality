@@ -7,8 +7,8 @@ seasonality.Rproj
 src/*.o
 src/*.so
 src/*.dll
-src/bdfm.o
+src/seasonality.o
 src/RcppExports.o
-src/bdfm.dll
+src/seasonality.dll
 *.o
 
