@@ -263,6 +263,37 @@ std::vector<Date> pseudo_weekly_sequence(Rcpp::Date start,
   }
   return(out);
 }
+//std::vector<Date>
+// [[Rcpp::export]]
+Rcpp::Date pseudo_weekly_date(Rcpp::Date date){
+  double tmp = date.getDay();
+  int week = std::ceil(tmp/7);
+  int day;
+  if(week==4 || week == 5){
+    day = MonthDays(date.getYear(), date.getMonth());
+  }else{
+    day = week*7;
+  }
+  Rcpp::Date d(date.getYear(), date.getMonth(), day);
+  return(d);
+}
+
+// std::vector<Date> d(date.size());
+// Rcpp::Date tmp;
+// int day;
+// double td;
+// int week;
+// for(uword j=0; j<date.size(); j++){
+//   tmp  = date[j];
+//   td = tmp.getDay()/7;
+//   week = std::ceil(td);
+//   if(week==4 || week == 5){
+//     day = MonthDays(tmp.getYear(), tmp.getMonth());
+//   }else{
+//     day = week*7;
+//   }
+//   d[j] = Date(tmp.getYear(), tmp.getMonth(), day);
+
 
 // [[Rcpp::export]]
 List SARMA(arma::vec Y, //univariate data

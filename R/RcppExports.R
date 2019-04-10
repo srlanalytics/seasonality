@@ -73,6 +73,10 @@ pseudo_weekly_sequence <- function(start, length) {
     .Call('_seasonality_pseudo_weekly_sequence', PACKAGE = 'seasonality', start, length)
 }
 
+pseudo_weekly_date <- function(date) {
+    .Call('_seasonality_pseudo_weekly_date', PACKAGE = 'seasonality', date)
+}
+
 SARMA <- function(Y, p, q, P, Q, P_lag, Q_lag) {
     .Call('_seasonality_SARMA', PACKAGE = 'seasonality', Y, p, q, P, Q, P_lag, Q_lag)
 }
