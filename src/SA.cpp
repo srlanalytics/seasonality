@@ -233,7 +233,10 @@ std::vector<Date> first_of_month(std::vector<Date> date){
 
 // [[Rcpp::export]]
 std::vector<Date> pseudo_weekly_sequence(Rcpp::Date start,
-                                        arma::uword length){
+                                        arma::uword length = 0,
+                                        Rcpp::Date end){
+
+
   uword year = start.getYear();
   uword month = start.getMonth();
   uword day = start.getDay();
