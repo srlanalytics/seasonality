@@ -205,15 +205,27 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// ps_week
+arma::uword ps_week(Rcpp::Date day);
+RcppExport SEXP _seasonality_ps_week(SEXP daySEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::Date >::type day(daySEXP);
+    rcpp_result_gen = Rcpp::wrap(ps_week(day));
+    return rcpp_result_gen;
+END_RCPP
+}
 // pseudo_weekly_sequence
-std::vector<Date> pseudo_weekly_sequence(Rcpp::Date start, arma::uword length);
-RcppExport SEXP _seasonality_pseudo_weekly_sequence(SEXP startSEXP, SEXP lengthSEXP) {
+std::vector<Date> pseudo_weekly_sequence(Rcpp::Date start, arma::uword length, Rcpp::Date end);
+RcppExport SEXP _seasonality_pseudo_weekly_sequence(SEXP startSEXP, SEXP lengthSEXP, SEXP endSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< Rcpp::Date >::type start(startSEXP);
     Rcpp::traits::input_parameter< arma::uword >::type length(lengthSEXP);
-    rcpp_result_gen = Rcpp::wrap(pseudo_weekly_sequence(start, length));
+    Rcpp::traits::input_parameter< Rcpp::Date >::type end(endSEXP);
+    rcpp_result_gen = Rcpp::wrap(pseudo_weekly_sequence(start, length, end));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -264,7 +276,8 @@ static const R_CallMethodDef CallEntries[] = {
     {"_seasonality_end_of_month", (DL_FUNC) &_seasonality_end_of_month, 1},
     {"_seasonality_end_of_month_date", (DL_FUNC) &_seasonality_end_of_month_date, 1},
     {"_seasonality_first_of_month", (DL_FUNC) &_seasonality_first_of_month, 1},
-    {"_seasonality_pseudo_weekly_sequence", (DL_FUNC) &_seasonality_pseudo_weekly_sequence, 2},
+    {"_seasonality_ps_week", (DL_FUNC) &_seasonality_ps_week, 1},
+    {"_seasonality_pseudo_weekly_sequence", (DL_FUNC) &_seasonality_pseudo_weekly_sequence, 3},
     {"_seasonality_pseudo_weekly_date", (DL_FUNC) &_seasonality_pseudo_weekly_date, 1},
     {"_seasonality_SARMA", (DL_FUNC) &_seasonality_SARMA, 7},
     {NULL, NULL, 0}

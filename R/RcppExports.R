@@ -69,8 +69,12 @@ first_of_month <- function(date) {
     .Call('_seasonality_first_of_month', PACKAGE = 'seasonality', date)
 }
 
-pseudo_weekly_sequence <- function(start, length) {
-    .Call('_seasonality_pseudo_weekly_sequence', PACKAGE = 'seasonality', start, length)
+ps_week <- function(day) {
+    .Call('_seasonality_ps_week', PACKAGE = 'seasonality', day)
+}
+
+pseudo_weekly_sequence <- function(start, length = 0L, end = 0L) {
+    .Call('_seasonality_pseudo_weekly_sequence', PACKAGE = 'seasonality', start, length, end)
 }
 
 pseudo_weekly_date <- function(date) {

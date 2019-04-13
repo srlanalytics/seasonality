@@ -232,40 +232,54 @@ std::vector<Date> first_of_month(std::vector<Date> date){
 }
 
 // [[Rcpp::export]]
+arma::uword ps_week(Rcpp::Date day){
+  uword d = day.getDay();
+  int tmp = floor(d/7) - 1;
+  int zip = 0;
+  uword week = std::max(zip,tmp);
+  return(week);
+}
+
+// [[Rcpp::export]]
 std::vector<Date> pseudo_weekly_sequence(Rcpp::Date start,
                                         arma::uword length = 0,
-                                        Rcpp::Date end){
+                                        Rcpp::Date end = 0){
 
-
-  uword year = start.getYear();
-  uword month = start.getMonth();
-  uword day = start.getDay();
-  uword d = floor(day/7) - 1;
-  uword zip = 0;
-  d = std::max(zip,d);
+  uword year, month, week;
   uvec days;
   days << 7 << 14 << 21 << 28 << endr;
+  if(length == 0){
+    if(end-start<0){
+      Rcpp::stop("'end' must come after 'start");
+    }
+    year = end.getYear() - start.getYear();
+    month = end.getMonth() - start.getMonth();
+    week = ps_week(end) - ps_week(start);
+    length = 48*year + 4*month + week + 1; //+1 bc week returns the index value
+  }
+  year = start.getYear();
+  month = start.getMonth();
+  week = ps_week(start);
   std::vector<Date> out(length);
-  uword j = 0;
-  while(j<length){
-    month = 1;
-    while(month<13){
-      d = 0;
-      while(d<4){
-        if(d<3){
-          out[j] = Date(year,month,days[d]);
-        }else{
-          out[j] = end_of_month_date(Date(year,month,days[d]));
-        }
-        d++;
-        j++;
-      }
+  for(uword j = 0; j<length; j++){
+    if(week<3){
+      out[j] = Date(year,month,days[week]);
+    }else{
+      out[j] = end_of_month_date(Date(year,month,days[week]));
+    }
+    week++;
+    if(week>3){
+      week = 0;
       month++;
     }
-    year++;
+    if(month>12){
+      month = 1;
+      year++;
+    }
   }
   return(out);
 }
+
 //std::vector<Date>
 // [[Rcpp::export]]
 Rcpp::Date pseudo_weekly_date(Rcpp::Date date){
