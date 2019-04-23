@@ -81,6 +81,10 @@ pseudo_weekly_date <- function(date) {
     .Call('_seasonality_pseudo_weekly_date', PACKAGE = 'seasonality', date)
 }
 
+numeric_to_date <- function(year, month, day) {
+    .Call('_seasonality_numeric_to_date', PACKAGE = 'seasonality', year, month, day)
+}
+
 SARMA <- function(Y, p, q, P, Q, P_lag, Q_lag) {
     .Call('_seasonality_SARMA', PACKAGE = 'seasonality', Y, p, q, P, Q, P_lag, Q_lag)
 }

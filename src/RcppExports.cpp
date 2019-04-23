@@ -240,6 +240,19 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// numeric_to_date
+Rcpp::Date numeric_to_date(int year, int month, int day);
+RcppExport SEXP _seasonality_numeric_to_date(SEXP yearSEXP, SEXP monthSEXP, SEXP daySEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< int >::type year(yearSEXP);
+    Rcpp::traits::input_parameter< int >::type month(monthSEXP);
+    Rcpp::traits::input_parameter< int >::type day(daySEXP);
+    rcpp_result_gen = Rcpp::wrap(numeric_to_date(year, month, day));
+    return rcpp_result_gen;
+END_RCPP
+}
 // SARMA
 List SARMA(arma::vec Y, arma::mat p, arma::mat q, arma::mat P, arma::mat Q, arma::umat P_lag, arma::umat Q_lag);
 RcppExport SEXP _seasonality_SARMA(SEXP YSEXP, SEXP pSEXP, SEXP qSEXP, SEXP PSEXP, SEXP QSEXP, SEXP P_lagSEXP, SEXP Q_lagSEXP) {
@@ -279,6 +292,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_seasonality_ps_week", (DL_FUNC) &_seasonality_ps_week, 1},
     {"_seasonality_pseudo_weekly_sequence", (DL_FUNC) &_seasonality_pseudo_weekly_sequence, 3},
     {"_seasonality_pseudo_weekly_date", (DL_FUNC) &_seasonality_pseudo_weekly_date, 1},
+    {"_seasonality_numeric_to_date", (DL_FUNC) &_seasonality_numeric_to_date, 3},
     {"_seasonality_SARMA", (DL_FUNC) &_seasonality_SARMA, 7},
     {NULL, NULL, 0}
 };

@@ -197,6 +197,17 @@ int MonthDays(double year,
   return(days);
 }
 
+// // [[Rcpp::export]]
+// arma::uvec MonthDaysVec(arma::uvec year,
+//                         arma::uvec month){
+//   if(year.n_elem !=  month.n_elem{
+//     Rcpp::stop("Year and month vectors must be the same size")
+//   }
+//   uvec days(year.n_elem);
+//
+//   return(days);
+// }
+
 //return last day for the given month
 // [[Rcpp::export]]
 std::vector<Date> end_of_month(std::vector<Date> date){
@@ -292,6 +303,14 @@ Rcpp::Date pseudo_weekly_date(Rcpp::Date date){
     day = week*7;
   }
   Rcpp::Date d(date.getYear(), date.getMonth(), day);
+  return(d);
+}
+
+// [[Rcpp::export]]
+Rcpp::Date numeric_to_date(int year,
+                           int month,
+                           int day){
+  Rcpp::Date d(year, month, day);
   return(d);
 }
 
