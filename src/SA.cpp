@@ -366,7 +366,7 @@ List SARMA(arma::vec Y, //univariate data
   uword srt = std::max(pq + Pl[0], pq + Ql[0]);
 
   if(sp==0 && sq==0){
-    throw("Seasonal adjustment requires at least 1 AR lag");
+    Rcpp::stop("Seasonal adjustment requires at least 1 AR lag");
   }else if(sp>0 && sq==0){
     if(P.n_cols==0 && Q.n_cols==0){
       for(uword t = srt; t<T; t++){
@@ -404,12 +404,12 @@ List SARMA(arma::vec Y, //univariate data
       }
     }
   }else if(sp==0 && sq>0){
-    throw("Seasonal adjustment requires at least 1 AR lag");
+    Rcpp::stop("Seasonal adjustment requires at least 1 AR lag");
   }else{
     if(P.n_cols==0 && Q.n_cols==0){ //q not used
-      throw("Seasonal adjustment with q>0 requires Q>0");
+      Rcpp::stop("Seasonal adjustment with q>0 requires Q>0");
     }else if(P.n_cols>0 && Q.n_cols==0){ //q not used
-      throw("Seasonal adjustment with q>0 requires Q>0");
+      Rcpp::stop("Seasonal adjustment with q>0 requires Q>0");
     }else if(P.n_cols==0 && Q.n_cols>0){
       for(uword t = srt; t<T; t++){
         s_MA = as_scalar(Q*eps(Q_lag.row(t))); //seasonal MA covariates

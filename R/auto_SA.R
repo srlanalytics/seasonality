@@ -173,9 +173,14 @@ seasonal_arma <- function(data, dates, fc_dates = NULL, order = c(1,1), seasonal
   est$Y_sa <- c(est$Y_sa)
   names(est$Y_sa) <- dates
 
-  est$seas <- c(est$seas)
-  names(est$seas) <- all_dates
-
+  if(is.null(ar_lags) && is.null(ma_lags)){
+    est$seas <- rep(0,length(all_dates))
+    names(est$seas) <- all_dates
+  }else{
+    est$seas <- c(est$seas)
+    names(est$seas) <- all_dates
+  }
+  
   est$E <- c(est$E)
   names(est$E) <- dates
 
