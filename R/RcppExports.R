@@ -61,12 +61,20 @@ end_of_month <- function(date) {
     .Call('_seasonality_end_of_month', PACKAGE = 'seasonality', date)
 }
 
+end_next_month <- function(date) {
+    .Call('_seasonality_end_next_month', PACKAGE = 'seasonality', date)
+}
+
 end_of_month_date <- function(date) {
     .Call('_seasonality_end_of_month_date', PACKAGE = 'seasonality', date)
 }
 
 first_of_month <- function(date) {
     .Call('_seasonality_first_of_month', PACKAGE = 'seasonality', date)
+}
+
+month_diff <- function(first_date, second_date) {
+    .Call('_seasonality_month_diff', PACKAGE = 'seasonality', first_date, second_date)
 }
 
 ps_week <- function(day) {

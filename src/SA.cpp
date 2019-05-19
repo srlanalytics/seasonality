@@ -222,6 +222,25 @@ std::vector<Date> end_of_month(std::vector<Date> date){
   return(d);
 }
 
+// [[Rcpp::export]]
+std::vector<Date> end_next_month(std::vector<Date> date){
+  std::vector<Date> d(date.size());
+  Rcpp::Date tmp;
+  int year, month, days;
+  for(uword j=0; j<date.size(); j++){
+    tmp  = date[j];
+    month = tmp.getMonth()+1;
+    year = tmp.getYear();
+    if(month==13){
+      month = 1;
+      year = year + 1;
+    }
+    days = MonthDays(year, month);
+    d[j] = Date(year, month, days);
+  }
+  return(d);
+}
+
 //return last day for the given month
 // [[Rcpp::export]]
 Rcpp::Date end_of_month_date(Rcpp::Date date){
@@ -240,6 +259,24 @@ std::vector<Date> first_of_month(std::vector<Date> date){
     d[j] = Date(tmp.getYear(), tmp.getMonth(), 1);
   }
   return(d);
+}
+
+//return difference in months between two dates
+// [[Rcpp::export]]
+arma::uvec month_diff(std::vector<Date> first_date,
+                                 std::vector<Date> second_date){
+  if(first_date.size() != second_date.size()){
+    Rcpp::stop("Date vectors must be same length");
+  }
+  uword T = first_date.size();
+  arma::uvec mdiff(T);
+  Rcpp::Date tmp1, tmp2;
+  for(uword j=0; j<T; j++){
+    tmp1  = first_date[j];
+    tmp2  = second_date[j];
+    mdiff[j] = 12*(tmp1.getYear()-tmp2.getYear()) + tmp1.getMonth() -  tmp2.getMonth();
+  }
+  return(mdiff);
 }
 
 // [[Rcpp::export]]

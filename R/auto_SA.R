@@ -8,7 +8,7 @@
 #' @importFrom stats loess median model.matrix na.exclude optim predict var
 #' @importFrom utils head tail
 #' @useDynLib seasonality
-auto_SA <- function(data, dates = NULL, forecast = FALSE){
+auto_SA <- function(data, dates = NULL, forecast = FALSE, take_logs = "auto"){
 
   if(is.null(dates)){
     stopifnot(requireNamespace("tsbox"))
@@ -274,9 +274,11 @@ select_SARMA <- function(y,dates){
   return(out)
 }
 
-auto_SA_core <- function(data, dates, forecast = FALSE){
+auto_SA_core <- function(data, dates, forecast = FALSE, take_logs = "auto"){
 
-  take_logs <- all(data[is.finite(data)]>0)
+  if(take_logs == "auto"){
+    take_logs <- all(data[is.finite(data)]>0)
+  }
   if(take_logs){
     data <- log(data)
   }
