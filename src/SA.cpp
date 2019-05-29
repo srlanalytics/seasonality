@@ -241,6 +241,25 @@ std::vector<Date> end_next_month(std::vector<Date> date){
   return(d);
 }
 
+// [[Rcpp::export]]
+std::vector<Date> end_previous_month(std::vector<Date> date){
+  std::vector<Date> d(date.size());
+  Rcpp::Date tmp;
+  int year, month, days;
+  for(uword j=0; j<date.size(); j++){
+    tmp  = date[j];
+    month = tmp.getMonth()-1;
+    year = tmp.getYear();
+    if(month==0){
+      month = 12;
+      year = year - 1;
+    }
+    days = MonthDays(year, month);
+    d[j] = Date(year, month, days);
+  }
+  return(d);
+}
+
 //return last day for the given month
 // [[Rcpp::export]]
 Rcpp::Date end_of_month_date(Rcpp::Date date){

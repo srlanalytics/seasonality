@@ -65,6 +65,10 @@ end_next_month <- function(date) {
     .Call('_seasonality_end_next_month', PACKAGE = 'seasonality', date)
 }
 
+end_previous_month <- function(date) {
+    .Call('_seasonality_end_previous_month', PACKAGE = 'seasonality', date)
+}
+
 end_of_month_date <- function(date) {
     .Call('_seasonality_end_of_month_date', PACKAGE = 'seasonality', date)
 }

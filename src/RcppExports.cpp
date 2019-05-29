@@ -194,6 +194,17 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// end_previous_month
+std::vector<Date> end_previous_month(std::vector<Date> date);
+RcppExport SEXP _seasonality_end_previous_month(SEXP dateSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< std::vector<Date> >::type date(dateSEXP);
+    rcpp_result_gen = Rcpp::wrap(end_previous_month(date));
+    return rcpp_result_gen;
+END_RCPP
+}
 // end_of_month_date
 Rcpp::Date end_of_month_date(Rcpp::Date date);
 RcppExport SEXP _seasonality_end_of_month_date(SEXP dateSEXP) {
@@ -311,6 +322,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_seasonality_MonthDays", (DL_FUNC) &_seasonality_MonthDays, 2},
     {"_seasonality_end_of_month", (DL_FUNC) &_seasonality_end_of_month, 1},
     {"_seasonality_end_next_month", (DL_FUNC) &_seasonality_end_next_month, 1},
+    {"_seasonality_end_previous_month", (DL_FUNC) &_seasonality_end_previous_month, 1},
     {"_seasonality_end_of_month_date", (DL_FUNC) &_seasonality_end_of_month_date, 1},
     {"_seasonality_first_of_month", (DL_FUNC) &_seasonality_first_of_month, 1},
     {"_seasonality_month_diff", (DL_FUNC) &_seasonality_month_diff, 2},
