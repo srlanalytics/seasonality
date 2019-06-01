@@ -396,15 +396,18 @@ List SARMA(arma::vec Y, //univariate data
                arma::umat P_lag, //seasonal AR lags. field format allows different lenghts at each date to account for holiday effects
                arma::umat Q_lag){ //seasonal MA lags
 
+  // first "throw away" observation is a zero.
+  Y = join_rows(zeros<vec>(1),Y);
+  // everything is 1 indexed except P_lag, Q_lag!!
   uword T   = Y.n_rows;
   uword T_long = std::max(Q_lag.n_cols,P_lag.n_cols);
-  T_long = std::max(T,T_long);
+  T_long = std::max(T,T_long+1);
   uword sp  = p.n_cols;
   uword sq  = q.n_cols;
   uword pq  = std::max(sp,sq);
   double s_AR, s_MA;
   vec E(T, fill::zeros);
-  vec eps(T, fill::zeros);
+  vec eps(T_long, fill::zeros);
   vec seas(T_long, fill::zeros);
   vec YP(T, fill::zeros);
   vec Y_sa(T, fill::zeros);
@@ -420,45 +423,33 @@ List SARMA(arma::vec Y, //univariate data
   // }
   // uword srt = std::max(pq + Pl[0], pq + Ql[0]);
 
-  urowvec idx_AR, idx_MA;
-  uvec use_AR, use_MA;
-
   if(sp==0 && sq==0){
     Rcpp::stop("Seasonal adjustment requires at least 1 AR lag");
   }else if(sp>0 && sq==0){
     if(P.n_cols==0 && Q.n_cols==0){
-      for(uword t = 1; t<T; t++){
+      for(uword t = pq+1; t<T; t++){
         //Rcpp::Rcout << t << sp << endl;
+        // y_t = Y(span(t-sp,t-1));
+        // y_p = YP(span(t-sp,t-1));
+        // y_idx = find_nonfinite(y_t);
+        // y_t(y_idx) = y_p(y_idx);
         if( !Y(span(t-sp,t)).is_finite() ) continue;
         YP(t) = as_scalar(p*flipud(Y(span(t-sp,t-1)))); //adding non-seasonal components
         E(t) = Y(t) - YP(t);
       }
     }else if(P.n_cols>0 && Q.n_cols==0){
-      for(uword t = 1; t<T; t++){
-        if( !Y(span(t-sp,t)).is_finite() ) continue;
-        idx_AR = P_lag.row(t);
-        use_AR = find(idx_AR);
-        if(use_AR.is_empty()){
-          s_AR = 0;
-        }else{
-          s_AR = as_scalar(trans(P(use_AR))*Y(idx_AR(use_AR))); //seasonal AR covariates
-        }
-        if( !is_finite(s_AR) ) continue;
+      for(uword t = pq+1; t<T; t++){
+        s_AR = as_scalar(P*Y(P_lag.row(t-1))); //seasonal AR covariates
+        if( !is_finite(s_AR) || !Y(span(t-sp,t)).is_finite() ) continue;
         seas(t) = s_AR; //seasonal component
         Y_sa(t) = Y(t) - seas(t);
         YP(t) = as_scalar(p*flipud(Y_sa(span(t-sp,t-1)))); //adding non-seasonal components
         E(t) = Y_sa(t) - YP(t);
       }
     }else if(P.n_cols==0 && Q.n_cols>0){
-      for(uword t = 1; t<T; t++){
+      for(uword t = pq+1; t<T; t++){
         // Rcpp::Rcout << t << endl;
-        idx_MA = Q_lag.row(t);
-        use_MA = find(idx_MA);
-        if(use_MA.is_empty()){
-          s_MA = 0;
-        }else{
-          s_MA = as_scalar(trans(Q(use_MA))*E(idx_MA(use_MA))); //seasonal MA covariates
-        }
+        s_MA = as_scalar(Q*E(Q_lag.row(t-1))); //seasonal MA covariates
         if( !Y(span(t-sp,t)).is_finite() || !is_finite(s_MA) ) continue;
         seas(t) = s_MA; //seasonal component
         Y_sa(t) = Y(t) - seas(t);
@@ -466,14 +457,9 @@ List SARMA(arma::vec Y, //univariate data
         E(t) = Y_sa(t) - YP(t);
       }
     }else{
-      for(uword t = 1; t<T; t++){
-        idx_AR = P_lag.row(t);
-        use_AR = find(idx_AR);
-        idx_MA = Q_lag.row(t);
-        use_MA = find(idx_MA);
-        if( use_MA.is_empty() || use_AR.is_empty() || t<sp ) continue;
-        s_MA = as_scalar(trans(Q(use_MA))*E(idx_MA(use_MA))); //seasonal MA covariates
-        s_AR = as_scalar(trans(P(use_AR))*Y(idx_AR(use_AR))); //seasonal AR covariates
+      for(uword t = pq+1; t<T; t++){
+        s_MA = as_scalar(Q*E(Q_lag.row(t-1))); //seasonal MA covariates
+        s_AR = as_scalar(P*Y(P_lag.row(t-1))); //seasonal AR covariates
         if( !Y(span(t-sp,t)).is_finite() || !is_finite(s_MA) || !is_finite(s_AR) ) continue;
         seas(t) = s_AR + s_MA; //seasonal component
         Y_sa(t) = Y(t) - seas(t);
@@ -490,34 +476,31 @@ List SARMA(arma::vec Y, //univariate data
     }else if(P.n_cols>0 && Q.n_cols==0){ //q not used
       Rcpp::stop("Seasonal adjustment with q>0 requires Q>0");
     }else if(P.n_cols==0 && Q.n_cols>0){
-      for(uword t = 1; t<T; t++){
-        idx_MA = Q_lag.row(t);
-        use_MA = find(idx_MA);
-        if( use_MA.is_empty() || t<sp || t<sq) continue;
-        s_MA = as_scalar(trans(Q(use_MA))*eps(idx_MA(use_MA))); //seasonal MA covariates
-        if( !Y(span(t-pq,t)).is_finite() || !is_finite(s_MA) ) continue;
-        seas(t) = s_MA; //seasonal component
-        Y_sa(t) = Y(t) - seas(t);
-        YP(t) = as_scalar(p*flipud(Y_sa(span(t-sp,t-1)))); //adding MA components
-        E(t) = Y_sa(t) - YP(t);
-        eps(t) = as_scalar(q*flipud(eps(span(t-sq,t-1)))) + E(t);
+      for(uword t = pq+1; t<T; t++){
+        s_MA = as_scalar(Q*eps(Q_lag.row(t-1))); //seasonal MA covariates
+        if( !Y(span(t-pq,t)).is_finite() || !is_finite(s_MA) ){
+          eps(t) = as_scalar(q*flipud(eps(span(t-sq,t-1))));
+        }else{
+          seas(t) = s_MA; //seasonal component
+          Y_sa(t) = Y(t) - seas(t);
+          YP(t) = as_scalar(p*flipud(Y_sa(span(t-sp,t-1)))); //adding MA components
+          E(t) = Y_sa(t) - YP(t);
+          eps(t) = as_scalar(q*flipud(eps(span(t-sq,t-1)))) + E(t);
+        }
       }
     }else{
-      for(uword t = 1; t<T; t++){
-        idx_AR = P_lag.row(t);
-        use_AR = find(idx_AR); //this is a little crappy b.c. we lose the first obs --- not sure how better to go about it
-        idx_MA = Q_lag.row(t);
-        use_MA = find(idx_MA);
-        //Rcpp::Rcout << t << endl;
-        if( use_MA.is_empty() || use_AR.is_empty() || t<sp || t<sq) continue;
-        s_MA = as_scalar(trans(Q(use_MA))*eps(idx_MA(use_MA))); //seasonal MA covariates
-        s_AR = as_scalar(trans(P(use_AR))*Y(idx_AR(use_AR))); //seasonal AR covariates
-        if( !Y(span(t-pq,t)).is_finite() || !is_finite(s_MA) || !is_finite(s_AR) ) continue;
-        seas(t) = s_AR + s_MA; //seasonal component
-        Y_sa(t) = Y(t) - seas(t);
-        YP(t) = as_scalar(p*flipud(Y_sa(span(t-sp,t-1)))); //predicting next period SA values
-        E(t) = Y_sa(t) - YP(t);
-        eps(t) = as_scalar(q*flipud(eps(span(t-sq,t-1)))) + E(t);
+      for(uword t = pq+1; t<T; t++){
+        s_MA = as_scalar(Q*eps(Q_lag.row(t-1))); //seasonal MA covariates
+        s_AR = as_scalar(P*Y(P_lag.row(t-1))); //seasonal AR covariates
+        if( !Y(span(t-pq,t)).is_finite() || !is_finite(s_MA) || !is_finite(s_AR) ){
+          eps(t) = as_scalar(q*flipud(eps(span(t-sq,t-1))));
+        }else{
+          seas(t) = s_AR + s_MA; //seasonal component
+          Y_sa(t) = Y(t) - seas(t);
+          YP(t) = as_scalar(p*flipud(Y_sa(span(t-sp,t-1)))); //predicting next period SA values
+          E(t) = Y_sa(t) - YP(t);
+          eps(t) = as_scalar(q*flipud(eps(span(t-sq,t-1)))) + E(t);
+        }
       }
     }
   }
@@ -526,40 +509,22 @@ List SARMA(arma::vec Y, //univariate data
   if(T_long > T){
     if(P.n_cols==0 && Q.n_cols>0){
       for(uword t = T; t<T_long; t++){
-        idx_MA = Q_lag.row(t);
-        use_MA = find(idx_MA);
-        if( use_MA.is_empty()) continue; //move forward to starting obs
-        s_MA = as_scalar(trans(Q(use_MA))*eps(idx_MA(use_MA))); //seasonal MA covariates
-        if( !is_finite(s_MA) ) continue;
+        eps(t) = as_scalar(q*flipud(eps(span(t-sq,t-1))));
+        s_MA = as_scalar(Q*eps(Q_lag.row(t-1))); //seasonal MA covariates
         seas(t) = s_MA; //seasonal component
       }
     }else if(P.n_cols>0 && Q.n_cols==0){
       for(uword t = T; t<T_long; t++){
-        idx_AR = P_lag.row(t);
-        use_AR = find(idx_AR);
-        if( use_AR.is_empty()) continue; //move forward to starting obs
-        s_AR = as_scalar(trans(P(use_AR))*Y(idx_AR(use_AR))); //seasonal AR covariates
+        s_AR = as_scalar(P*Y(P_lag.row(t-1))); //seasonal AR covariates
         if( !is_finite(s_AR) ) continue;
         seas(t) = s_AR; //seasonal component
       }
     }else{
       for(uword t = T; t<T_long; t++){
-        idx_AR = P_lag.row(t);
-        use_AR = find(idx_AR);
-        idx_MA = Q_lag.row(t);
-        use_MA = find(idx_MA);
-        if( use_MA.is_empty() ){
-          s_MA = 0;
-        }else{
-          s_MA = as_scalar(trans(Q(use_MA))*eps(idx_MA(use_MA))); //seasonal MA covariates
-        }
-        if( use_AR.is_empty()){
-          s_AR = 0;
-        }else{
-          s_AR = as_scalar(trans(P(use_AR))*Y(idx_AR(use_AR))); //seasonal AR covariates
-        }
-        if(!is_finite(s_MA)) s_MA = 0;
-        if(!is_finite(s_AR)) s_AR = 0;
+        eps(t) = as_scalar(q*flipud(eps(span(t-sq,t-1))));
+        s_MA = as_scalar(Q*eps(Q_lag.row(t-1))); //seasonal MA covariates
+        s_AR = as_scalar(P*Y(P_lag.row(t-1))); //seasonal AR covariates
+        if( !is_finite(s_AR) ) s_AR = 0;
         seas(t) = s_AR + s_MA;
       }
     }
@@ -567,8 +532,14 @@ List SARMA(arma::vec Y, //univariate data
 
   //double MSE = as_scalar(trans(E(span(srt,T-1)))*E(span(srt,T-1)))/T;
 
+  seas.shed_row(0);
+  Y_sa.shed_row(0);
+  E.shed_row(0);
+  YP.shed_row(0);
+
   uvec ind = find(E); //find non-zero elements of E
   double MSE = as_scalar(trans(E(ind))*E(ind))/(ind.n_elem);
+
 
   List Out;
   Out["MSE"] = MSE;

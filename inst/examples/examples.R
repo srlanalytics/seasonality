@@ -2,11 +2,10 @@
 library(seasonality)
 
 library(data.table)
-initial_claims_SA <- fread("~/ICSA.csv")
+load("~/seasonality/data/icnsa.RData")
 
-initial_claims_SA <- initial_claims_SA[-nrow(initial_claims_SA),]
-
-save(initial_claims_SA, file = "~/seasonality/data/icsa.RData")
+# initial_claims_SA <- initial_claims_SA[-nrow(initial_claims_SA),]
+# save(initial_claims_SA, file = "~/seasonality/data/icsa.RData")
 
 #this can also be entered as a ts_boxable object
 dates_weekly <- as.Date(initial_claims$DATE)

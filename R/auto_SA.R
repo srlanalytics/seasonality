@@ -99,27 +99,95 @@ arma_est <- function(x, y, order, ar_lags, ma_lags){
   return(est)
 }
 
+holiday_range <- function(hdate, dates, before = 30, after = 30){
+  all_dates <- seq.Date(from = hdate - before, to = hdate + after, by = "day")
+  names(all_dates) <- seq(-before,after)
+  out_dates <- all_dates[all_dates%in%dates]
+  return(out_dates)
+}
+
+min_diff_name <- function(this_date_name, last_year_names) which.min(abs(as.numeric(last_year_names) - as.numeric(this_date_name) ))
+
+previous_year_holiday <- function(idx, Hdates){
+  this_year <- Hdates[[idx]]
+  last_year <- Hdates[[idx-1]]
+  out <- last_year[sapply(names(this_year), FUN = min_diff_name, last_year_names = names(last_year))]
+  return(out)
+}
+
+which_is_equal <- function(x,y) which(y==x) #x - single value, y - vector to compare to
+
 make_lag_index <- function(dates, effects){
+  lags <- NULL
   if("year"%in%effects){
     #this is for an irregular patern of dates
     year_ago <- do.call("c", lapply(dates, years_ago, shift = 1))
-    lags <- c(which_date_closest_ordered(FromVec = year_ago, IndVec = dates)) - 1 #C++ indexing
-  }else if("two_year"%in%effects){
+    tmp  <- which_date_closest_ordered(FromVec = year_ago, IndVec = dates)
+    tmp[seq(1,max(which(tmp==1))-1)] <- 0
+    lags <- cbind(lags, tmp) #R indexing
+  }
+  if("two_year"%in%effects){
     #this is for an irregular patern of dates
     year_ago <- do.call("c", lapply(dates, years_ago, shift = 2))
-    lags <- c(which_date_closest_ordered(FromVec = year_ago, IndVec = dates)) - 1 #C++ indexing
-  }else if("three_year"%in%effects){
+    tmp <- which_date_closest_ordered(FromVec = year_ago, IndVec = dates)
+    tmp[seq(1,max(which(tmp==1))-1)] <- 0
+    lags <- cbind(lags, tmp) #R indexing
+  }
+  if("three_year"%in%effects){
     #this is for an irregular patern of dates
     year_ago <- do.call("c", lapply(dates, years_ago, shift = 3))
-    lags <- c(which_date_closest_ordered(FromVec = year_ago, IndVec = dates)) - 1 #C++ indexing
-  }else{
-    lags <- NULL
+    tmp <- which_date_closest_ordered(FromVec = year_ago, IndVec = dates)
+    tmp[seq(1,max(which(tmp==1))-1)] <- 0
+    lags <- cbind(lags, tmp) #R indexing
   }
-  return(lags)
+  if("cny"%in%effects){
+    tmp <- rep(0, length(dates))
+    hdates <- cny[cny>= min(dates) & cny<=max(dates)]
+    Hdates <- lapply(hdates, FUN = holiday_range, dates = dates)
+    previous_year <- do.call("c",  lapply(seq(2,length(Hdates)), FUN = previous_year_holiday, Hdates = Hdates))
+    this_year <-  do.call("c", Hdates)[-seq(1,length(Hdates[[1]]))]
+    #if(is.unsorted(dates, na.rm = TRUE) || is.unsorted(this_year, na.rm = TRUE) || is.unsorted(previous_year, na.rm = TRUE)) stop("Dates must be sorted")
+    tmp[sapply(this_year, FUN = which_is_equal, y = dates)] <- sapply(previous_year, FUN = which_is_equal, y = dates)
+    lags <- cbind(lags, tmp) #R indexing
+  }
+  if("easter"%in%effects){
+    tmp <- rep(0, length(dates))
+    hdates <- easter[easter>= min(dates) & easter<=max(dates)]
+    Hdates <- lapply(hdates, FUN = holiday_range, dates = dates, before = 6, after = 6)
+    previous_year <- do.call("c",  lapply(seq(2,length(Hdates)), FUN = previous_year_holiday, Hdates = Hdates))
+    this_year <-  do.call("c", Hdates)[-seq(1,length(Hdates[[1]]))]
+    #if(is.unsorted(dates, na.rm = TRUE) || is.unsorted(this_year, na.rm = TRUE) || is.unsorted(previous_year, na.rm = TRUE)) stop("Dates must be sorted")
+    tmp[sapply(this_year, FUN = which_is_equal, y = dates)] <- sapply(previous_year, FUN = which_is_equal, y = dates)
+    lags <- cbind(lags, tmp) #R indexing
+  }
+  if("diwali"%in%effects){
+    tmp <- rep(0, length(dates))
+    hdates <- diwali[diwali>= min(dates) & diwali<=max(dates)]
+    Hdates <- lapply(hdates, FUN = holiday_range, dates = dates)
+    previous_year <- do.call("c",  lapply(seq(2,length(Hdates)), FUN = previous_year_holiday, Hdates = Hdates))
+    this_year <-  do.call("c", Hdates)[-seq(1,length(Hdates[[1]]))]
+    #if(is.unsorted(dates, na.rm = TRUE) || is.unsorted(this_year, na.rm = TRUE) || is.unsorted(previous_year, na.rm = TRUE)) stop("Dates must be sorted")
+    tmp[sapply(this_year, FUN = which_is_equal, y = dates)] <- sapply(previous_year, FUN = which_is_equal, y = dates)
+    lags <- cbind(lags, tmp) #R indexing
+  }
+  if("black_friday"%in%effects){
+    tmp <- rep(0, length(dates))
+    hdates <- black_friday[black_friday>= min(dates) & black_friday<=max(dates)]
+    Hdates <- lapply(hdates, FUN = holiday_range, dates = dates, before = 6, after = 6)
+    previous_year <- do.call("c",  lapply(seq(2,length(Hdates)), FUN = previous_year_holiday, Hdates = Hdates))
+    this_year <-  do.call("c", Hdates)[-seq(1,length(Hdates[[1]]))]
+    #if(is.unsorted(dates, na.rm = TRUE) || is.unsorted(this_year, na.rm = TRUE) || is.unsorted(previous_year, na.rm = TRUE)) stop("Dates must be sorted")
+    tmp[sapply(this_year, FUN = which_is_equal, y = dates)] <- sapply(previous_year, FUN = which_is_equal, y = dates)
+    lags <- cbind(lags, tmp) #R indexing
+  }
+
+  return(lags) #keep R indexing
 }
 
+#which(dates == previous_year[this_year == dates[993]])
 
-seasonal_arma <- function(data, dates, fc_dates = NULL, order = c(1,1), seasonal_ar = NULL, seasonal_ma = NULL){
+
+seasonal_arma <- function(data, dates, fc_dates = NULL, order = c(1,0), seasonal_ar = NULL, seasonal_ma = NULL){
 
   ddates <- median(diff(dates))
   if(ddates>66){
@@ -140,7 +208,7 @@ seasonal_arma <- function(data, dates, fc_dates = NULL, order = c(1,1), seasonal
       ar_lags <- ar_lags-1 #c++ indexing
       ar_lags(ar_lags<0) <- 0
     }else{
-      ar_lags <- do.call("cbind",lapply(seasonal_ar, FUN = make_lag_index, dates = all_dates))
+      ar_lags <- make_lag_index(all_dates, effects = seasonal_ar)
     }
     P <- matrix(0,1,NCOL(ar_lags))
   }else{
@@ -153,7 +221,7 @@ seasonal_arma <- function(data, dates, fc_dates = NULL, order = c(1,1), seasonal
       ma_lags <- ar_lags-1 #c++ indexing
       ma_lags(ar_lags<0) <- 0
     }else{
-      ma_lags <- do.call("cbind",lapply(seasonal_ma, FUN = make_lag_index, dates = all_dates))
+      ma_lags <- make_lag_index(all_dates, effects = seasonal_ma)
     }
     Q <- matrix(0,1,NCOL(ma_lags))
   }else{
@@ -180,7 +248,7 @@ seasonal_arma <- function(data, dates, fc_dates = NULL, order = c(1,1), seasonal
     est$seas <- c(est$seas)
     names(est$seas) <- all_dates
   }
-  
+
   est$E <- c(est$E)
   names(est$E) <- dates
 
@@ -192,6 +260,7 @@ seasonal_arma <- function(data, dates, fc_dates = NULL, order = c(1,1), seasonal
 
 
 select_SARMA <- function(y,dates){
+
   ar_effect <- NULL #need to add holidays and such
   ma_effect <- NULL
   ar_it <- 1
@@ -265,6 +334,35 @@ select_SARMA <- function(y,dates){
       }
     }#if length(ma_effect>0)
   } #for(it in 1:4)
+
+  #test holiday effects
+  #cny
+
+  est  <- seasonal_arma(y, dates, order = order, seasonal_ar = ar_effect, seasonal_ma = ma_effect)
+
+  P_lag <- make_lag_index(dates, "year")
+  Q_lag <- make_lag_index(dates, "cny")
+
+  sue <- SARMA(y, p = est$p, q = est$q, P = est$P, Q = matrix(0,0,0), P_lag = P_lag, Q_lag = Q_lag)
+  sue$MSE
+
+  bob <- SARMA(y, p = est$p, q = est$q, P = est$P, Q = matrix(0,1,1), P_lag = P_lag, Q_lag = Q_lag)
+  bob$MSE
+
+  est  <- seasonal_arma(y, dates, order = order, seasonal_ar = c(ar_effect, "cny"), seasonal_ma = ma_effect)
+  SIC1 <- (ucv-est$MSE)/ucv - pen*(sum(order) + length(ar_effect) + length(ma_effect) + 1)/sqrt(length(y))  #Seth's bogus information criteria
+  est  <- seasonal_arma(y, dates, order = order, seasonal_ar = ar_effect, seasonal_ma = c(ma_effect, "cny"))
+  SIC1 <- (ucv-est$MSE)/ucv - pen*(sum(order) + length(ar_effect) + length(ma_effect) + 1)/sqrt(length(y))  #Seth's bogus information criteria
+
+  SIC0
+
+
+
+  #diwali
+
+  #easter
+
+  #black_friday
 
   out <- list(
     order = order,
