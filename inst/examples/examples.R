@@ -4,6 +4,8 @@ library(seasonality)
 library(data.table)
 load("~/seasonality/data/icnsa.RData")
 
+load("~/seasonality/data/holiday2.RData")
+
 # initial_claims_SA <- initial_claims_SA[-nrow(initial_claims_SA),]
 # save(initial_claims_SA, file = "~/seasonality/data/icsa.RData")
 
