@@ -187,54 +187,28 @@ select_SARMA <- function(y,dates){
     est <- seasonal_arma(y, dates, order = order_ar, seasonal_ar = ar_effect, seasonal_ma = ma_effect)
     SIC3 <- (ucv-est$MSE)/ucv - pen*(sum(order) + length(ar_effect) + length(ma_effect))/sqrt(length(y))  #Seth's bogus information criteria
 
-    if(length(ma_effect)==0){ #q>0 requires a seasonal MA component
-      order_ma <- order + c(0,1)
-      ma_effect_new <- c(ma_effect, years[1])
-      est <- seasonal_arma(y, dates, order = order_ma, seasonal_ar = ar_effect, seasonal_ma = ma_effect_new)
-      SIC4 <- (ucv-est$MSE)/ucv - pen*(sum(order) + length(ar_effect) + length(ma_effect))/sqrt(length(y))  #Seth's bogus information criteria
-      if( all(SIC0 > c(SIC1, SIC2, SIC3, SIC4)) ){
-        break
-      }else if( all(SIC1 > c(SIC0, SIC2, SIC3, SIC4)) ){
-        ar_effect <- ar_effect_new
-        ar_it <- ar_it + 1
-        SIC0 <- SIC1
-      }else if( all(SIC2 > c(SIC1, SIC0, SIC3, SIC4)) ){
-        ma_effect <- ma_effect_new
-        ma_it <- ma_it + 1
-        SIC0 <- SIC2
-      }else if( all(SIC3 > c(SIC1, SIC2, SIC0, SIC4)) ){
-        order <- order_ar
-        SIC0 <- SIC3
-      }
-      else if( all(SIC4 > c(SIC0, SIC1, SIC2, SIC3)) ){
-        order <- order_ma
-        ma_effect <- ma_effect_new
-        ma_it <- 2
-        SIC0 <- SIC4
-      }
-    }else{ #if length(ma_effect>0)
-      order_ma <- order + c(0,1)
-      est <- seasonal_arma(y, dates, order = order_ma, seasonal_ar = ar_effect, seasonal_ma = ma_effect)
-      SIC4 <- (ucv-est$MSE)/ucv - pen*(sum(order) + length(ar_effect) + length(ma_effect))/sqrt(length(y))  #Seth's bogus information criteria
-      if( all(SIC0 > c(SIC1, SIC2, SIC3, SIC4)) ){
-        break
-      }else if( all(SIC1 > c(SIC0, SIC2, SIC3, SIC4)) ){
-        ar_effect <- ar_effect_new
-        ar_it <- ar_it + 1
-        SIC0 <- SIC1
-      }else if( all(SIC2 > c(SIC1, SIC0, SIC3, SIC4)) ){
-        ma_effect <- ma_effect_new
-        ma_it <- ma_it + 1
-        SIC0 <- SIC2
-      }else if( all(SIC3 > c(SIC1, SIC2, SIC0, SIC4)) ){
-        order <- order_ar
-        SIC0 <- SIC3
-      }
-      else if( all(SIC4 > c(SIC0, SIC1, SIC2, SIC3)) ){
-        order <- order_ma
-        SIC0 <- SIC4
-      }
-    }#if length(ma_effect>0)
+    order_ma <- order + c(0,1)
+    est <- seasonal_arma(y, dates, order = order_ma, seasonal_ar = ar_effect, seasonal_ma = ma_effect)
+    SIC4 <- (ucv-est$MSE)/ucv - pen*(sum(order) + length(ar_effect) + length(ma_effect))/sqrt(length(y))  #Seth's bogus information criteria
+
+    if( all(SIC0 > c(SIC1, SIC2, SIC3, SIC4)) ){
+      break
+    }else if( all(SIC1 > c(SIC0, SIC2, SIC3, SIC4)) ){
+      ar_effect <- ar_effect_new
+      ar_it <- ar_it + 1
+      SIC0 <- SIC1
+    }else if( all(SIC2 > c(SIC1, SIC0, SIC3, SIC4)) ){
+      ma_effect <- ma_effect_new
+      ma_it <- ma_it + 1
+      SIC0 <- SIC2
+    }else if( all(SIC3 > c(SIC1, SIC2, SIC0, SIC4)) ){
+      order <- order_ar
+      SIC0 <- SIC3
+    }
+    else if( all(SIC4 > c(SIC0, SIC1, SIC2, SIC3)) ){
+      order <- order_ma
+      SIC0 <- SIC4
+    }
   } #for(it in 1:4)
 
   #test holiday effects --- need to update to set initial values to results from previous iteration

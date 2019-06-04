@@ -52,6 +52,8 @@ lines(dates[-1], diff(log(final(sa))), lwd = 1, col = "red")
 
 
 #test agains auto.arima
+library(forecast)
+
 data <- IP$IPNSA
 dates <- IP$DATE
 
