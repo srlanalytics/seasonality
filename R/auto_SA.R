@@ -2,13 +2,12 @@
 #'
 #' @param data data in matrix format with time in rows
 #' @param dates dates corresponding to data points if data is not ts_boxable()
-#' @param forecast T/F return forecasted adjustment factors
 #' @export
 #' @importFrom Rcpp evalCpp
 #' @importFrom stats loess median model.matrix na.exclude optim predict var
 #' @importFrom utils head tail
 #' @useDynLib seasonality
-auto_SA <- function(data, dates = NULL, forecast = FALSE, take_logs = "auto"){
+auto_SA <- function(data, dates = NULL, take_logs = "auto", detrend = TRUE){
 
   if(is.null(dates)){
     stopifnot(requireNamespace("tsbox"))
@@ -25,7 +24,7 @@ auto_SA <- function(data, dates = NULL, forecast = FALSE, take_logs = "auto"){
   dates   <- as.Date(dates)
   data <- c(unclass(data))
 
-  OUT <- auto_SA_core(data, dates, forecast)
+  OUT <- auto_SA_core(data, dates)
 
   return(OUT)
 
@@ -172,7 +171,7 @@ seasonal_rev_arma <- function(data, dates, order = c(1,0), seasonal_ar = NULL, s
   return(est)
 }
 
-seasonal_arma <- function(data, dates, fc_dates = NULL, order = c(1,0), seasonal_ar = NULL, seasonal_ma = NULL, initial_vals = NULL){
+seasonal_arma <- function(data, dates, order = c(1,0), seasonal_ar = NULL, seasonal_ma = NULL, initial_vals = NULL){
 
   ddates <- median(diff(dates))
   if(ddates>66){
@@ -190,15 +189,13 @@ seasonal_arma <- function(data, dates, fc_dates = NULL, order = c(1,0), seasonal
     q <- initial_vals$q
   }
 
-  all_dates <- c(dates, fc_dates)
-
   if(!is.null(seasonal_ar)){
     if(is.numeric(seasonal_ar)){
-      ar_lags <- seq(length(all_dates))%x%matrix(1,1,length(seasonal_ar)) - matrix(1,length(all_dates),1)%x%matrix(seasonal_ar, 1, length(seasonal_ar))
+      ar_lags <- seq(length(dates))%x%matrix(1,1,length(seasonal_ar)) - matrix(1,length(dates),1)%x%matrix(seasonal_ar, 1, length(seasonal_ar))
       ar_lags <- ar_lags-1 #c++ indexing
       ar_lags(ar_lags<0) <- 0
     }else{
-      ar_lags <- make_lag_index(all_dates, effects = seasonal_ar)
+      ar_lags <- make_lag_index(dates, effects = seasonal_ar)
     }
     if(is.null(initial_vals)){
       P <- matrix(0,1,NCOL(ar_lags))
@@ -211,11 +208,11 @@ seasonal_arma <- function(data, dates, fc_dates = NULL, order = c(1,0), seasonal
   }
   if(!is.null(seasonal_ma)){
     if(is.numeric(seasonal_ma)){
-      ma_lags <- seq(length(all_dates))%x%matrix(1,1,length(seasonal_ma)) - matrix(1,length(all_dates),1)%x%matrix(seasonal_ma, 1, length(seasonal_ma))
+      ma_lags <- seq(length(dates))%x%matrix(1,1,length(seasonal_ma)) - matrix(1,length(dates),1)%x%matrix(seasonal_ma, 1, length(seasonal_ma))
       ma_lags <- ar_lags-1 #c++ indexing
       ma_lags(ar_lags<0) <- 0
     }else{
-      ma_lags <- make_lag_index(all_dates, effects = seasonal_ma)
+      ma_lags <- make_lag_index(dates, effects = seasonal_ma)
     }
     if(is.null(initial_vals)){
       Q <- matrix(0,1,NCOL(ma_lags))
@@ -240,11 +237,11 @@ seasonal_arma <- function(data, dates, fc_dates = NULL, order = c(1,0), seasonal
   names(est$Y_sa) <- dates
 
   if(is.null(ar_lags) && is.null(ma_lags)){
-    est$seas <- rep(0,length(all_dates))
-    names(est$seas) <- all_dates
+    est$seas <- rep(0,length(dates))
+    names(est$seas) <- dates
   }else{
     est$seas <- c(est$seas)
-    names(est$seas) <- all_dates
+    names(est$seas) <- dates
   }
 
   est$E <- c(est$E)
@@ -256,7 +253,18 @@ seasonal_arma <- function(data, dates, fc_dates = NULL, order = c(1,0), seasonal
   return(est)
 }
 
-auto_SA_core <- function(data, dates, forecast = FALSE, take_logs = "auto"){
+ave_seas <- function(seas, rev_seas){
+  out <- rep(0, length(seas))
+  idx_seas <- seas == 0
+  idx_rev  <- rev_seas == 0
+  idx_both <- !idx_seas & !idx_rev
+  out[idx_seas] <- rev_seas[idx_seas]
+  out[idx_rev] <- seas[idx_rev]
+  out[idx_both] <- seq(0,1,length.out = sum(idx_both))*seas[idx_both] + (1-seq(0,1,length.out = sum(idx_both)))*rev_seas[idx_both]
+  return(out)
+}
+
+auto_SA_core <- function(data, dates, take_logs = "auto", detrend = TRUE){
 
   if(take_logs == "auto"){
     take_logs <- all(data[is.finite(data)]>0)
@@ -268,24 +276,28 @@ auto_SA_core <- function(data, dates, forecast = FALSE, take_logs = "auto"){
   dates <- as.Date(dates)
   ddates <- median(diff.Date(dates))
   if(ddates >= 28 && ddates <= 31){ #Monthly data
-    trend <- loess(data ~ seq(length(data)), span = .1, na.action = na.exclude) #refine parameter selection
-    trend <- predict(trend)
-    #ts.plot(cbind(trend, data), col = c("red", "blue"))
-    y <- data - trend
-    dates <- end_of_month(dates)
-    if(is.numeric(forecast)){ #forecast must be numeric or logical
-      fc_dates <- end_of_month(seq.Date(from = first_of_month(tail(dates,1)), by = "month", length.out = forecast)[-1])
-    }else if(is.logical(forecast)){
-      if(forecast){
-        fc_dates <- end_of_month(seq.Date(from = first_of_month(tail(dates,1)), by = "month", length.out = 13)[-1])
-      }else{
-        fc_dates <- NULL
-      }
+    if(detrend){
+      trend <- loess(data ~ seq(length(data)), span = .1, na.action = na.exclude) #refine parameter selection
+      trend <- predict(trend)
+      #ts.plot(cbind(trend, data), col = c("red", "blue"))
+      y <- data - trend
     }else{
-      fc_dates = NULL
+      y <- data
     }
+    dates <- end_of_month(dates)
+    # if(is.numeric(forecast)){ #forecast must be numeric or logical
+    #   fc_dates <- end_of_month(seq.Date(from = first_of_month(tail(dates,1)), by = "month", length.out = forecast)[-1])
+    # }else if(is.logical(forecast)){
+    #   if(forecast){
+    #     fc_dates <- end_of_month(seq.Date(from = first_of_month(tail(dates,1)), by = "month", length.out = 13)[-1])
+    #   }else{
+    #     fc_dates <- NULL
+    #   }
+    # }else{
+    #   fc_dates = NULL
+    # }
     #Step (1): select SARMA model
-    params <- select_SARMA(y,dates,fc_dates)
+    params <- select_SARMA(y,dates)
     #est <- seasonal_arma(data = y, dates = dates, fc_dates = fc_dates, order = params$order, seasonal_ar = params$ar_effect, seasonal_ma = params$ma_effect)
 
     #Step (2): Smooth --- need to do the properly at some point
@@ -296,14 +308,20 @@ auto_SA_core <- function(data, dates, forecast = FALSE, take_logs = "auto"){
                          Q = params$Q)
     rev_est <- seasonal_rev_arma(y, dates, order = params$order, seasonal_ar = params$ar_effect, seasonal_ma = params$ma_effect,
                                  initial_vals = initial_vals)
-    idx <- seq(1,length(dates)) #if fc_dates, params$seas will be longer than y
-    sa <- params$seas[idx]
-    sa[sa==0] <- rev_est$seas[sa==0]
-    params$seas[idx] <- sa
-    y_sa <- y - sa
-    cp <- ncol(params$p)
-    z <- stack_obs(as.matrix(y_sa), cp)
-    E <- c(rep(0, cp), y_sa[-seq(1,cp)] - params$p%*%z[-nrow(z),])
+    adj_fact <- ave_seas(seas = params$seas, rev_seas = rev_est$seas)
+    y_sa <- y - adj_fact
+
+    E <- seasonal_arma(y_sa, dates, order = params$order)
+    E <- E$E
+
+    # idx <- seq(1,length(dates)) #if fc_dates, params$seas will be longer than y
+    # sa <- params$seas[idx]
+    # sa[sa==0] <- rev_est$seas[sa==0]
+    # params$seas[idx] <- sa
+    # y_sa <- y - sa
+    # cp <- ncol(params$p)
+    # z <- stack_obs(as.matrix(y_sa), cp)
+    # E <- c(rep(0, cp), y_sa[-seq(1,cp)] - params$p%*%z[-nrow(z),])
 
     #Step (3): Remove weekday/trading day effects and other exogenous junk (just trading days so far)
 
@@ -313,7 +331,7 @@ auto_SA_core <- function(data, dates, forecast = FALSE, take_logs = "auto"){
     trading_days <- scale(trading_days)
     bet <- mean(trading_days*E)
     Enew <- E - bet*trading_days
-    if( (mean(E^2) - mean(Enew^2))/var(y) > .1/sqrt(length(y))){
+    if( (mean(E^2) - mean(Enew^2))/var(y_sa) > .1/sqrt(length(y))){
       td <- do.call("c",lapply(as.Date(names(params$seas)), FUN = weekdays_in_month)) #this clunky approach accomadates fc_dates
       td <- (td - attr(trading_days, "scaled:center"))/attr(trading_days, "scaled:scale")
       params$seas <- params$seas + bet*td
@@ -322,43 +340,48 @@ auto_SA_core <- function(data, dates, forecast = FALSE, take_logs = "auto"){
   } #If data is monthly
 
   if(ddates >= 6 && ddates <= 8){ #Weekly data
-    trend <- loess(data ~ seq(length(data)), span = .15, na.action = na.exclude) #refine parameter selection
-    trend <- predict(trend) #all we're really interested in
-    #ts.plot(cbind(data,trend), col = c("red", "blue"))
-    y <- data - trend
-
-    if(is.logical(forecast)){
-      if(forecast){
-        if(all(unique(ddates)==7)){ #true weekly
-          fc_dates <- seq.Date(from = tail(dates,1), by = 7, length.out = 25)[-1]
-        }else if(all(sapply(dates, FUN = day)%in%c(7,14,21,28:31))){ #pseudo weekly
-          fc_dates <- pseudo_weekly_sequence(start = tail(dates,1), length = 25)
-        }else{
-          fc_dates <- NULL
-        }
-      }else{
-        fc_dates <- NULL
-      }
+    if(detrend){
+      trend <- loess(data ~ seq(length(data)), span = .1, na.action = na.exclude) #refine parameter selection
+      trend <- predict(trend)
+      #ts.plot(cbind(trend, data), col = c("red", "blue"))
+      y <- data - trend
     }else{
-      fc_dates = NULL
+      y <- data
     }
+    # if(is.logical(forecast)){
+    #   if(forecast){
+    #     if(all(unique(ddates)==7)){ #true weekly
+    #       fc_dates <- seq.Date(from = tail(dates,1), by = 7, length.out = 25)[-1]
+    #     }else if(all(sapply(dates, FUN = day)%in%c(7,14,21,28:31))){ #pseudo weekly
+    #       fc_dates <- pseudo_weekly_sequence(start = tail(dates,1), length = 25)
+    #     }else{
+    #       fc_dates <- NULL
+    #     }
+    #   }else{
+    #     fc_dates <- NULL
+    #   }
+    # }else{
+    #   fc_dates = NULL
+    # }
 
     #Step (1): select SARMA model
-    params <- select_SARMA(y,dates, fc_dates)
+    params <- select_SARMA(y,dates)
     #est <- seasonal_arma(data = y, dates = dates, fc_dates = fc_dates, order = params$order, seasonal_ar = params$ar_effect, seasonal_ma = params$ma_effect)
 
-    #Step (2): Smooth --- fudged for now...
+    #Step (2): Smooth --- need to do the properly at some point
+    #Question: will forecasts made on smoothed data perform better since the tail will not be smoothed (i.e. is just filtered)?
     initial_vals <- list(p = params$p,
                          q = params$q,
                          P = params$P,
                          Q = params$Q)
     rev_est <- seasonal_rev_arma(y, dates, order = params$order, seasonal_ar = params$ar_effect, seasonal_ma = params$ma_effect,
                                  initial_vals = initial_vals)
-    idx <- seq(1,length(dates)) #if fc_dates, params$seas will be longer than y
-    sa <- params$seas[idx]
-    sa[sa==0] <- rev_est$seas[sa==0]
-    params$seas[idx] <- sa
-    # y_sa <- y - sa
+    adj_fact <- ave_seas(seas = params$seas, rev_seas = rev_est$seas)
+    y_sa <- y - adj_fact
+
+    E <- seasonal_arma(y_sa, dates, order = params$order)
+    E <- E$E
+
     # cp <- ncol(params$p)
     # z <- stack_obs(as.matrix(y_sa), cp)
     # E <- c(rep(0, cp), y_sa[-seq(1,cp)] - params$p%*%z[-nrow(z),])
@@ -368,37 +391,43 @@ auto_SA_core <- function(data, dates, forecast = FALSE, take_logs = "auto"){
   } #if data is weekly
 
   if(ddates == 1){ #daily data
-    trend <- loess(data ~ seq(length(data)), span = .3, na.action = na.exclude) #refine parameter selection
-    trend <- predict(trend) #all we're really interested in
-    #ts.plot(cbind(data,trend), col = c("red", "blue"))
-    y <- data - trend
-
-    if(is.numeric(forecast)){ #forecast must be numeric or logical
-      fc_dates = forecast
-    }else if(is.logical(forecast)){
-      if(forecast){
-        fc_dates <- seq.Date(from = tail(dates,1), by = 1, length.out = 61)[-1]
-        }
+    if(detrend){
+      trend <- loess(data ~ seq(length(data)), span = .1, na.action = na.exclude) #refine parameter selection
+      trend <- predict(trend)
+      #ts.plot(cbind(trend, data), col = c("red", "blue"))
+      y <- data - trend
     }else{
-      fc_dates = NULL
+      y <- data
     }
+    # if(is.numeric(forecast)){ #forecast must be numeric or logical
+    #   fc_dates = forecast
+    # }else if(is.logical(forecast)){
+    #   if(forecast){
+    #     fc_dates <- seq.Date(from = tail(dates,1), by = 1, length.out = 61)[-1]
+    #     }
+    # }else{
+    #   fc_dates = NULL
+    # }
 
     #Step (1): select SARMA model
-    params <- select_SARMA(y,dates, fc_dates)
+    params <- select_SARMA(y,dates)
     #est <- seasonal_arma(data = y, dates = dates, fc_dates = fc_dates, order = params$order, seasonal_ar = params$ar_effect, seasonal_ma = params$ma_effect)
 
-    #Step (2): Smooth... fudged
+    #Step (2): Smooth --- need to do the properly at some point
+    #Question: will forecasts made on smoothed data perform better since the tail will not be smoothed (i.e. is just filtered)?
     initial_vals <- list(p = params$p,
                          q = params$q,
                          P = params$P,
                          Q = params$Q)
     rev_est <- seasonal_rev_arma(y, dates, order = params$order, seasonal_ar = params$ar_effect, seasonal_ma = params$ma_effect,
                                  initial_vals = initial_vals)
-    idx <- seq(1,length(dates)) #if fc_dates, params$seas will be longer than y
-    sa <- params$seas[idx]
-    sa[sa==0] <- rev_est$seas[sa==0]
-    params$seas[idx] <- sa
-    # y_sa <- y - sa
+    adj_fact <- ave_seas(seas = params$seas, rev_seas = rev_est$seas)
+    y_sa <- y - adj_fact
+
+    E <- seasonal_arma(y_sa, dates, order = params$order)
+    E <- E$E
+
+
     # cp <- ncol(params$p)
     # z <- stack_obs(as.matrix(y_sa), cp)
     # E <- c(rep(0, cp), y_sa[-seq(1,cp)] - params$p%*%z[-nrow(z),])
@@ -407,7 +436,7 @@ auto_SA_core <- function(data, dates, forecast = FALSE, take_logs = "auto"){
 
   } #if data is daily
 
-  data_sa <- data - sa
+  data_sa <- data - adj_fact
 
   if(take_logs){
     data_sa = exp(data_sa)
@@ -415,14 +444,17 @@ auto_SA_core <- function(data, dates, forecast = FALSE, take_logs = "auto"){
 
   OUT <- list(
     data_sa = data_sa,
-    adj_factor = params$seas,
+    adj_factor = adj_fact,
+    ar_effect = params$ar_effect,
+    ma_effect = params$ma_effect,
     parameters = list(
       p = params$p,
       q = params$q,
       P = params$P,
       Q = params$Q
     ),
-    log_transform = take_logs
+    log_transform = take_logs,
+    MSE = mean(E^2)
   )
   return(OUT)
 
