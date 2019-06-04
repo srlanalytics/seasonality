@@ -1,10 +1,11 @@
 #Basic examples
-library(seasonality)
+# library(seasonality)
+#
+# library(data.table)
+# load("~/seasonality/data/icnsa.RData")
+# load("~/seasonality/data/holiday2.RData")
 
-library(data.table)
-load("~/seasonality/data/icnsa.RData")
 
-load("~/seasonality/data/holiday2.RData")
 
 # initial_claims_SA <- initial_claims_SA[-nrow(initial_claims_SA),]
 # save(initial_claims_SA, file = "~/seasonality/data/icsa.RData")
@@ -27,6 +28,23 @@ lines(dates_weekly, SA$data_sa, col = "black")
 plot(dates_weekly, SA$data_sa, type = "l", lwd = 3, col = "lightskyblue1",
      xlab = "Dates", ylab = "Initial Claims")
 lines(dates_weekly, initial_claims_SA$ICSA, col = "black")
+
+data_monthly <- IP$IPNSA[1:590]
+dates_monthly <- IP$DATE[1:590]
+SA <- auto_SA(data = data_monthly, dates = dates_monthly)
+
+y <- ts(data_monthly, start = c(1970,1), frequency = 12)
+library(seasonal)
+
+sa <- seas(y)
+plot(dates_monthly, SA$data_sa, type = "l", lwd = 3, col = "lightskyblue1",
+     xlab = "Dates", ylab = "IP")
+lines(dates_monthly, final(sa), col = "black")
+
+ts.plot(data_monthly)
+
+summary(sa)
+
 
 
 dt <- initial_claims

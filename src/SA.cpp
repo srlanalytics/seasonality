@@ -30,16 +30,36 @@ using namespace Rcpp;
 //   return(C);
 // }
 
+// // [[Rcpp::export]]
+// arma::uvec get_ar_lags(arma::uword lag_length,
+//                        arma::uvec s_lag){
+//   uvec one(lag_length+1, fill::ones);
+//   uvec out = s_lag(0)*one - regspace<uvec>(0,lag_length);
+//   uvec ind;
+//   for(uword k=1; k<s_lag.size(); k++){
+//     out = join_vert(out, s_lag(k)*one - regspace<uvec>(0,lag_length));
+//   }
+//   return(out);
+// }
+
+//Stack times series data in VAR format
 // [[Rcpp::export]]
-arma::uvec get_ar_lags(arma::uword lag_length,
-                       arma::uvec s_lag){
-  uvec one(lag_length+1, fill::ones);
-  uvec out = s_lag(0)*one - regspace<uvec>(0,lag_length);
-  uvec ind;
-  for(uword k=1; k<s_lag.size(); k++){
-    out = join_vert(out, s_lag(k)*one - regspace<uvec>(0,lag_length));
+arma:: mat stack_obs(arma::mat nn, arma::uword p, arma::uword r = 0){
+  uword rr = nn.n_rows;
+  uword mn = nn.n_cols;
+  if(r == 0){
+    r = rr-p+1;
   }
-  return(out);
+  if(rr-p+1 != r){
+    stop("Length of input nn and length of data r do not agree.");
+  }
+  mat N(r,mn*p, fill::zeros);
+  uword indx = 0;
+  for(uword j = 1; j<=p; j++){
+    N.cols(indx,indx+mn-1) = nn.rows(p-j,rr-j);
+    indx = indx+mn;
+  }
+  return(N);
 }
 
 // //Create the companion form of the transition matrix B
@@ -398,7 +418,7 @@ List SARMA(arma::vec Y, //univariate data
 
   // first "throw away" observation is a zero.
   Y = join_vert(zeros<vec>(1),Y);
-  // everything is 1 indexed except P_lag, Q_lag!!
+
   uword T   = Y.n_rows;
   uword T_long = std::max(Q_lag.n_cols,P_lag.n_cols);
   T_long = std::max(T,T_long+1);
