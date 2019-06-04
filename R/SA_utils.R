@@ -33,10 +33,10 @@ genhol_dates <- function(x, dates, start = 0, end = 0) {
 weekdays_in_month <- function(date){
   sq <- seq.Date(from = first_of_month(date), to = end_of_month(date), by = "day")
   count <- sum(as.integer(!(weekdays(sq) %in% c("Saturday", "Sunday"))))
-  if(month(date)==12){
+  if(as.numeric(format.Date(date,"%m"))==12){
     count = count - sum(as.integer(!(weekdays(sq[24:25]) %in% c("Saturday", "Sunday")))) #subtract Christmas eve and Christmas if counted
   }
-  if(month(date)==1){
+  if(as.numeric(format.Date(date,"%m"))==1){
     count = count - as.integer(!(weekdays(sq[1]) %in% c("Saturday", "Sunday"))) #subtract New Years if counted
   }
   return(count)

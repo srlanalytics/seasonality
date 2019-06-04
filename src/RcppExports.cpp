@@ -6,26 +6,16 @@
 
 using namespace Rcpp;
 
-// get_ar_lags
-arma::uvec get_ar_lags(arma::uword lag_length, arma::uvec s_lag);
-RcppExport SEXP _seasonality_get_ar_lags(SEXP lag_lengthSEXP, SEXP s_lagSEXP) {
+// stack_obs
+arma:: mat stack_obs(arma::mat nn, arma::uword p, arma::uword r);
+RcppExport SEXP _seasonality_stack_obs(SEXP nnSEXP, SEXP pSEXP, SEXP rSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< arma::uword >::type lag_length(lag_lengthSEXP);
-    Rcpp::traits::input_parameter< arma::uvec >::type s_lag(s_lagSEXP);
-    rcpp_result_gen = Rcpp::wrap(get_ar_lags(lag_length, s_lag));
-    return rcpp_result_gen;
-END_RCPP
-}
-// comp_form
-arma::mat comp_form(arma::mat B);
-RcppExport SEXP _seasonality_comp_form(SEXP BSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< arma::mat >::type B(BSEXP);
-    rcpp_result_gen = Rcpp::wrap(comp_form(B));
+    Rcpp::traits::input_parameter< arma::mat >::type nn(nnSEXP);
+    Rcpp::traits::input_parameter< arma::uword >::type p(pSEXP);
+    Rcpp::traits::input_parameter< arma::uword >::type r(rSEXP);
+    rcpp_result_gen = Rcpp::wrap(stack_obs(nn, p, r));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -288,16 +278,16 @@ BEGIN_RCPP
 END_RCPP
 }
 // SARMA
-List SARMA(arma::vec Y, arma::mat p, arma::mat q, arma::mat P, arma::mat Q, arma::umat P_lag, arma::umat Q_lag);
+List SARMA(arma::vec Y, arma::rowvec p, arma::rowvec q, arma::rowvec P, arma::rowvec Q, arma::umat P_lag, arma::umat Q_lag);
 RcppExport SEXP _seasonality_SARMA(SEXP YSEXP, SEXP pSEXP, SEXP qSEXP, SEXP PSEXP, SEXP QSEXP, SEXP P_lagSEXP, SEXP Q_lagSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< arma::vec >::type Y(YSEXP);
-    Rcpp::traits::input_parameter< arma::mat >::type p(pSEXP);
-    Rcpp::traits::input_parameter< arma::mat >::type q(qSEXP);
-    Rcpp::traits::input_parameter< arma::mat >::type P(PSEXP);
-    Rcpp::traits::input_parameter< arma::mat >::type Q(QSEXP);
+    Rcpp::traits::input_parameter< arma::rowvec >::type p(pSEXP);
+    Rcpp::traits::input_parameter< arma::rowvec >::type q(qSEXP);
+    Rcpp::traits::input_parameter< arma::rowvec >::type P(PSEXP);
+    Rcpp::traits::input_parameter< arma::rowvec >::type Q(QSEXP);
     Rcpp::traits::input_parameter< arma::umat >::type P_lag(P_lagSEXP);
     Rcpp::traits::input_parameter< arma::umat >::type Q_lag(Q_lagSEXP);
     rcpp_result_gen = Rcpp::wrap(SARMA(Y, p, q, P, Q, P_lag, Q_lag));
@@ -306,8 +296,7 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_seasonality_get_ar_lags", (DL_FUNC) &_seasonality_get_ar_lags, 2},
-    {"_seasonality_comp_form", (DL_FUNC) &_seasonality_comp_form, 1},
+    {"_seasonality_stack_obs", (DL_FUNC) &_seasonality_stack_obs, 3},
     {"_seasonality_last_year_holiday", (DL_FUNC) &_seasonality_last_year_holiday, 3},
     {"_seasonality_last_year", (DL_FUNC) &_seasonality_last_year, 1},
     {"_seasonality_years_ago", (DL_FUNC) &_seasonality_years_ago, 2},

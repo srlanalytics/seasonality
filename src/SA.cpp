@@ -4,52 +4,72 @@
 using namespace arma;
 using namespace Rcpp;
 
-arma::sp_mat sp_rows(arma::sp_mat A,
-                     arma::uvec r   ){
-  uword n_rows   = A.n_rows;
-  //  uword n_cols   = A.n_cols;
-  uword n_r      = r.size();
-  uvec  tmp      = regspace<uvec>(0,n_rows-1);
-  tmp      = tmp.elem(r);
-  umat  location = join_vert(trans(regspace<uvec>(0,n_r-1)),trans(tmp));
-  sp_mat J(location,ones<vec>(n_r),n_r,n_rows);
-  sp_mat C       = J*A;
-  return(C);
-}
+// arma::sp_mat sp_rows(arma::sp_mat A,
+//                      arma::uvec r   ){
+//   uword n_rows   = A.n_rows;
+//   //  uword n_cols   = A.n_cols;
+//   uword n_r      = r.size();
+//   uvec  tmp      = regspace<uvec>(0,n_rows-1);
+//   tmp      = tmp.elem(r);
+//   umat  location = join_vert(trans(regspace<uvec>(0,n_r-1)),trans(tmp));
+//   sp_mat J(location,ones<vec>(n_r),n_r,n_rows);
+//   sp_mat C       = J*A;
+//   return(C);
+// }
+//
+// arma::sp_mat sp_cols(arma::sp_mat A,
+//                      arma::uvec r   ){
+//   //  uword n_rows   = A.n_rows;
+//   uword n_cols   = A.n_cols;
+//   uword n_r      = r.size();
+//   uvec  tmp      = regspace<uvec>(0,n_cols-1);
+//   tmp            = tmp.elem(r);
+//   umat  location = join_vert(trans(tmp),trans(regspace<uvec>(0,n_r-1)));
+//   sp_mat J(location,ones<vec>(n_r),n_cols,n_r);
+//   sp_mat C       = A*J;
+//   return(C);
+// }
 
-arma::sp_mat sp_cols(arma::sp_mat A,
-                     arma::uvec r   ){
-  //  uword n_rows   = A.n_rows;
-  uword n_cols   = A.n_cols;
-  uword n_r      = r.size();
-  uvec  tmp      = regspace<uvec>(0,n_cols-1);
-  tmp            = tmp.elem(r);
-  umat  location = join_vert(trans(tmp),trans(regspace<uvec>(0,n_r-1)));
-  sp_mat J(location,ones<vec>(n_r),n_cols,n_r);
-  sp_mat C       = A*J;
-  return(C);
-}
+// // [[Rcpp::export]]
+// arma::uvec get_ar_lags(arma::uword lag_length,
+//                        arma::uvec s_lag){
+//   uvec one(lag_length+1, fill::ones);
+//   uvec out = s_lag(0)*one - regspace<uvec>(0,lag_length);
+//   uvec ind;
+//   for(uword k=1; k<s_lag.size(); k++){
+//     out = join_vert(out, s_lag(k)*one - regspace<uvec>(0,lag_length));
+//   }
+//   return(out);
+// }
 
+//Stack times series data in VAR format
 // [[Rcpp::export]]
-arma::uvec get_ar_lags(arma::uword lag_length,
-                       arma::uvec s_lag){
-  uvec one(lag_length+1, fill::ones);
-  uvec out = s_lag(0)*one - regspace<uvec>(0,lag_length);
-  uvec ind;
-  for(uword k=1; k<s_lag.size(); k++){
-    out = join_vert(out, s_lag(k)*one - regspace<uvec>(0,lag_length));
+arma:: mat stack_obs(arma::mat nn, arma::uword p, arma::uword r = 0){
+  uword rr = nn.n_rows;
+  uword mn = nn.n_cols;
+  if(r == 0){
+    r = rr-p+1;
   }
-  return(out);
+  if(rr-p+1 != r){
+    stop("Length of input nn and length of data r do not agree.");
+  }
+  mat N(r,mn*p, fill::zeros);
+  uword indx = 0;
+  for(uword j = 1; j<=p; j++){
+    N.cols(indx,indx+mn-1) = nn.rows(p-j,rr-j);
+    indx = indx+mn;
+  }
+  return(N);
 }
 
-//Create the companion form of the transition matrix B
-// [[Rcpp::export]]
-arma::mat comp_form(arma::mat B){
-  uword r = B.n_rows;
-  uword c = B.n_cols;
-  mat A   = join_vert(B, join_horiz(eye<mat>(c-r,c-r), zeros<mat>(c-r,r)));
-  return(A);
-}
+// //Create the companion form of the transition matrix B
+// // [[Rcpp::export]]
+// arma::mat comp_form(arma::mat B){
+//   uword r = B.n_rows;
+//   uword c = B.n_cols;
+//   mat A   = join_vert(B, join_horiz(eye<mat>(c-r,c-r), zeros<mat>(c-r,r)));
+//   return(A);
+// }
 
 // [[Rcpp::export]]
 Rcpp::Date last_year_holiday(Rcpp::Date today,
@@ -386,138 +406,173 @@ Rcpp::Date numeric_to_date(int year,
 //   }
 //   d[j] = Date(tmp.getYear(), tmp.getMonth(), day);
 
-
 // [[Rcpp::export]]
 List SARMA(arma::vec Y, //univariate data
-               arma::mat p, //AR parameters
-               arma::mat q, //MA parameters
-               arma::mat P, //seasonal AR parameters
-               arma::mat Q, //seasonal MA parameters
-               arma::umat P_lag, //seasonal AR lags
-               arma::umat Q_lag){ //seasonal MA lags
+            arma::rowvec p, //AR parameters
+            arma::rowvec q, //MA parameters
+            arma::rowvec P, //seasonal AR parameters
+            arma::rowvec Q, //seasonal MA parameters
+            arma::umat P_lag, //seasonal AR lags. field format allows different lenghts at each date to account for holiday effects
+            arma::umat Q_lag){ //seasonal MA lags
 
+  // first "throw away" observation is a zero.
+  Y = join_vert(zeros<vec>(1),Y);
 
   uword T   = Y.n_rows;
-  uword T_long = std::max(Q_lag.n_rows,P_lag.n_rows);
-  T_long = std::max(T,T_long);
+  uword T_long = std::max(Q_lag.n_cols,P_lag.n_cols);
+  T_long = std::max(T,T_long+1);
   uword sp  = p.n_cols;
   uword sq  = q.n_cols;
   uword pq  = std::max(sp,sq);
   double s_AR, s_MA;
   vec E(T, fill::zeros);
-  vec eps(T, fill::zeros);
+  //vec eps(T_long, fill::zeros);
   vec seas(T_long, fill::zeros);
   vec YP(T, fill::zeros);
   vec Y_sa(T, fill::zeros);
   uvec all_ind;
   //where to start the iterations
-  uvec Pl(2, fill::zeros);
-  uvec Ql(2, fill::zeros);
-  if(P.n_cols>0){
-    Pl = ind2sub(size(P_lag), max(find(P_lag==0)));
-  }
-  if(Q.n_cols>0){
-    Ql = ind2sub(size(Q_lag), max(find(Q_lag==0)));
-  }
-  uword srt = std::max(pq + Pl[0], pq + Ql[0]);
+  // uvec Pl(2, fill::zeros);
+  // uvec Ql(2, fill::zeros);
+  // if(P.n_cols>0){
+  //   Pl = ind2sub(size(P_lag), max(find(P_lag==0)));
+  // }
+  // if(Q.n_cols>0){
+  //   Ql = ind2sub(size(Q_lag), max(find(Q_lag==0)));
+  // }
+  // uword srt = std::max(pq + Pl[0], pq + Ql[0]);
 
   if(sp==0 && sq==0){
     Rcpp::stop("Seasonal adjustment requires at least 1 AR lag");
   }else if(sp>0 && sq==0){
     if(P.n_cols==0 && Q.n_cols==0){
-      for(uword t = srt; t<T; t++){
-        if( !Y(span(t-sp,t)).is_finite() ) continue;
-        YP(t) = as_scalar(p*flipud(Y(span(t-sp,t-1)))); //adding non-seasonal components
+      for(uword t = pq+1; t<T; t++){
+        //predict
+        YP(t) = as_scalar(p*flipud(Y(span(t-sp,t-1)))); //predicting next period SA values
+        if(!is_finite(YP(t))) YP(t) = as_scalar(p*flipud(YP(span(t-sp,t-1))));
         E(t) = Y(t) - YP(t);
+        if(!is_finite(E(t))) E(t) = 0;
       }
     }else if(P.n_cols>0 && Q.n_cols==0){
-      for(uword t = srt; t<T; t++){
-        s_AR = as_scalar(P*Y(P_lag.row(t))); //seasonal AR covariates
-        if( !Y(span(t-sp,t)).is_finite() || !is_finite(s_AR) ) continue;
+      for(uword t = pq+1; t<T; t++){
+        //predict
+        YP(t) = as_scalar(p*flipud(Y_sa(span(t-sp,t-1)))); //predicting next period SA values
+        //update
+        s_AR = as_scalar(P*Y(P_lag.row(t-1))); //seasonal AR covariates
+        if(!is_finite(s_AR)) s_AR = as_scalar(P*(YP(P_lag.row(t-1)) + seas(P_lag.row(t-1)) )); //Y(span(t-pq,t)).is_finite() &&
         seas(t) = s_AR; //seasonal component
         Y_sa(t) = Y(t) - seas(t);
-        YP(t) = as_scalar(p*flipud(Y_sa(span(t-sp,t-1)))); //adding non-seasonal components
+        if(!is_finite(Y_sa(t))) Y_sa(t) = YP(t);
         E(t) = Y_sa(t) - YP(t);
       }
     }else if(P.n_cols==0 && Q.n_cols>0){
-      for(uword t = srt; t<T; t++){
-        s_MA = as_scalar(Q*E(Q_lag.row(t))); //seasonal MA covariates
-        if( !Y(span(t-sp,t)).is_finite() || !is_finite(s_MA) ) continue;
+      for(uword t = pq+1; t<T; t++){
+        //predict
+        YP(t) = as_scalar(p*flipud(Y_sa(span(t-sp,t-1)))); //predicting next period SA values
+        //update
+        s_MA = as_scalar(Q*Y_sa(Q_lag.row(t-1))); //seasonal MA covariates
         seas(t) = s_MA; //seasonal component
         Y_sa(t) = Y(t) - seas(t);
-        YP(t) = as_scalar(p*flipud(Y_sa(span(t-sp,t-1)))); //adding non-seasonal components
+        if(!is_finite(Y_sa(t))) Y_sa(t) = YP(t);
         E(t) = Y_sa(t) - YP(t);
       }
     }else{
-      for(uword t = srt; t<T; t++){
-        s_MA = as_scalar(Q*E(Q_lag.row(t))); //seasonal MA covariates
-        s_AR = as_scalar(P*Y(P_lag.row(t))); //seasonal AR covariates
-        if( !Y(span(t-sp,t)).is_finite() || !is_finite(s_MA) || !is_finite(s_AR) ) continue;
+      for(uword t = pq+1; t<T; t++){
+        //predict
+        YP(t) = as_scalar(p*flipud(Y_sa(span(t-sp,t-1)))); //predicting next period SA values
+        //update
+        s_MA = as_scalar(Q*Y_sa(Q_lag.row(t-1))); //seasonal MA covariates
+        s_AR = as_scalar(P*Y(P_lag.row(t-1))); //seasonal AR covariates
+        if(!is_finite(s_AR)) s_AR = as_scalar(P*(YP(P_lag.row(t-1)) + seas(P_lag.row(t-1)) )); //Y(span(t-pq,t)).is_finite() &&
         seas(t) = s_AR + s_MA; //seasonal component
         Y_sa(t) = Y(t) - seas(t);
-        YP(t) = as_scalar(p*flipud(Y_sa(span(t-sp,t-1)))); //adding non-seasonal components
+        if(!is_finite(Y_sa(t))) Y_sa(t) = YP(t);
         E(t) = Y_sa(t) - YP(t);
       }
     }
-  }else if(sp==0 && sq>0){
+  }else if(sp==0 && sq>0){ //if sp>0 and sq==0
     Rcpp::stop("Seasonal adjustment requires at least 1 AR lag");
   }else{
-    if(P.n_cols==0 && Q.n_cols==0){ //q not used
-      Rcpp::stop("Seasonal adjustment with q>0 requires Q>0");
-    }else if(P.n_cols>0 && Q.n_cols==0){ //q not used
-      Rcpp::stop("Seasonal adjustment with q>0 requires Q>0");
+    if(P.n_cols==0 && Q.n_cols==0){
+      for(uword t = pq+1; t<T; t++){
+        //predict
+        YP(t) = as_scalar(p*flipud(Y(span(t-sp,t-1)))) + as_scalar(q*flipud(E(span(t-sq,t-1)))); //predicting next period SA values
+        if(!is_finite(YP(t))) YP(t) = as_scalar(p*flipud(YP(span(t-sp,t-1)))) + as_scalar(q*flipud(E(span(t-sq,t-1))));
+        E(t) = Y(t) - YP(t);
+        if(!is_finite(E(t))) E(t) = 0;
+      }
+    }else if(P.n_cols>0 && Q.n_cols==0){
+      for(uword t = pq+1; t<T; t++){
+        //predict
+        YP(t) = as_scalar(p*flipud(Y_sa(span(t-sp,t-1)))) + as_scalar(q*flipud(E(span(t-sq,t-1)))); //predicting next period SA values
+        //update
+        s_AR = as_scalar(P*Y(P_lag.row(t-1))); //seasonal AR covariates
+        if(!is_finite(s_AR)) s_AR = as_scalar(P*(YP(P_lag.row(t-1)) + seas(P_lag.row(t-1)) )); //Y(span(t-pq,t)).is_finite() &&
+        seas(t) = s_AR; //seasonal component
+        Y_sa(t) = Y(t) - seas(t);
+        if(!is_finite(Y_sa(t))) Y_sa(t) = YP(t);
+        E(t) = Y_sa(t) - YP(t);
+      }
     }else if(P.n_cols==0 && Q.n_cols>0){
-      for(uword t = srt; t<T; t++){
-        s_MA = as_scalar(Q*eps(Q_lag.row(t))); //seasonal MA covariates
-        if( !Y(span(t-pq,t)).is_finite() || !is_finite(s_MA) ) continue;
+      for(uword t = pq+1; t<T; t++){
+        //predict
+        YP(t) = as_scalar(p*flipud(Y_sa(span(t-sp,t-1)))) + as_scalar(q*flipud(E(span(t-sq,t-1)))); //predicting next period SA values
+        //update
+        s_MA = as_scalar(Q*Y_sa(Q_lag.row(t-1))); //seasonal MA covariates
         seas(t) = s_MA; //seasonal component
         Y_sa(t) = Y(t) - seas(t);
-        YP(t) = as_scalar(p*flipud(Y_sa(span(t-sp,t-1)))); //adding MA components
+        if(!is_finite(Y_sa(t))) Y_sa(t) = YP(t);
         E(t) = Y_sa(t) - YP(t);
-        eps(t) = as_scalar(q*flipud(eps(span(t-sq,t-1)))) + E(t);
       }
     }else{
-      for(uword t = srt; t<T; t++){
-        s_MA = as_scalar(Q*eps(Q_lag.row(t))); //seasonal MA covariates
-        s_AR = as_scalar(P*Y(P_lag.row(t))); //seasonal AR covariates
-        if( !Y(span(t-pq,t)).is_finite() || !is_finite(s_MA) || !is_finite(s_AR) ) continue;
+      for(uword t = pq+1; t<T; t++){
+        //predict
+        YP(t) = as_scalar(p*flipud(Y_sa(span(t-sp,t-1)))) + as_scalar(q*flipud(E(span(t-sq,t-1)))); //predicting next period SA values
+        //update
+        s_MA = as_scalar(Q*Y_sa(Q_lag.row(t-1))); //seasonal MA covariates
+        s_AR = as_scalar(P*Y(P_lag.row(t-1))); //seasonal AR covariates
+        if(!is_finite(s_AR)) s_AR = as_scalar(P*(YP(P_lag.row(t-1)) + seas(P_lag.row(t-1)) )); //Y(span(t-pq,t)).is_finite() &&
         seas(t) = s_AR + s_MA; //seasonal component
         Y_sa(t) = Y(t) - seas(t);
-        YP(t) = as_scalar(p*flipud(Y_sa(span(t-sp,t-1)))); //predicting next period SA values
+        if(!is_finite(Y_sa(t))) Y_sa(t) = YP(t);
         E(t) = Y_sa(t) - YP(t);
-        eps(t) = as_scalar(q*flipud(eps(span(t-sq,t-1)))) + E(t);
       }
     }
   }
 
-  //Get future seasonal adjustments if required
-  if(T_long > T){
-    if(P.n_cols==0 && Q.n_cols>0){
-      for(uword t = T; t<T_long; t++){
-        s_MA = as_scalar(Q*eps(Q_lag.row(t))); //seasonal MA covariates
-        if( !is_finite(s_MA) ) continue;
-        seas(t) = s_MA; //seasonal component
-      }
-    }else if(P.n_cols>0 && Q.n_cols==0){
-      for(uword t = T; t<T_long; t++){
-        s_AR = as_scalar(P*Y(P_lag.row(t))); //seasonal AR covariates
-        if( !is_finite(s_AR) ) continue;
-        seas(t) = s_AR; //seasonal component
-      }
-    }else{
-      for(uword t = T; t<T_long; t++){
-        s_MA = as_scalar(Q*eps(Q_lag.row(t))); //seasonal MA covariates
-        s_AR = as_scalar(P*Y(P_lag.row(t))); //seasonal AR covariates
-        if( !is_finite(s_MA) || !is_finite(s_AR) ) continue;
-        seas(t) = s_AR + s_MA; //seasonal component
-      }
-    }
-  } // if(T_long > T)
+  // //Get future seasonal adjustments if required
+  // if(T_long > T){
+  //   if(P.n_cols==0 && Q.n_cols>0){
+  //     for(uword t = T; t<T_long; t++){
+  //       s_MA = as_scalar(Q*Y_sa(Q_lag.row(t-1))); //seasonal MA covariates
+  //       seas(t) = s_MA; //seasonal component
+  //     }
+  //   }else if(P.n_cols>0 && Q.n_cols==0){
+  //     for(uword t = T; t<T_long; t++){
+  //       s_AR = as_scalar(P*Y(P_lag.row(t-1))); //seasonal AR covariates
+  //       if( !is_finite(s_AR) ) continue;
+  //       seas(t) = s_AR; //seasonal component
+  //     }
+  //   }else{
+  //     for(uword t = T; t<T_long; t++){
+  //       s_MA = as_scalar(Q*Y_sa(Q_lag.row(t-1))); //seasonal MA covariates
+  //       s_AR = as_scalar(P*Y(P_lag.row(t-1))); //seasonal AR covariates
+  //       if( !is_finite(s_AR) ) s_AR = 0;
+  //       seas(t) = s_AR + s_MA;
+  //     }
+  //   }
+  // } // if(T_long > T)
 
   //double MSE = as_scalar(trans(E(span(srt,T-1)))*E(span(srt,T-1)))/T;
 
+  seas.shed_row(0);
+  Y_sa.shed_row(0);
+  E.shed_row(0);
+  YP.shed_row(0);
+
   uvec ind = find(E); //find non-zero elements of E
   double MSE = as_scalar(trans(E(ind))*E(ind))/(ind.n_elem);
+
 
   List Out;
   Out["MSE"] = MSE;
@@ -529,8 +584,6 @@ List SARMA(arma::vec Y, //univariate data
   Out["q"] = q;
   Out["P"] = P;
   Out["Q"] = Q;
-  Out["srt"] = srt;
 
   return(Out);
 }
-
