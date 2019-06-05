@@ -104,9 +104,7 @@ arma_est <- function(x, y, order, ar_lags, ma_lags){
 seasonal_rev_arma <- function(data, dates, order = c(1,0), seasonal_ar = NULL, seasonal_ma = NULL, initial_vals = NULL){
 
   ddates <- median(diff(dates))
-  if(ddates>66){
-    stop("Data must have a frequency between daily and quarterly")
-  }
+
   if(tail(dates,1) - dates[1] < 1095){
     stop("At least three years of data are required for seasonal adjustment")
   }
@@ -174,9 +172,7 @@ seasonal_rev_arma <- function(data, dates, order = c(1,0), seasonal_ar = NULL, s
 seasonal_arma <- function(data, dates, order = c(1,0), seasonal_ar = NULL, seasonal_ma = NULL, initial_vals = NULL){
 
   ddates <- median(diff(dates))
-  if(ddates>66){
-    stop("Data must have a frequency between daily and quarterly")
-  }
+
   if(tail(dates,1) - dates[1] < 1095){
     stop("At least three years of data are required for seasonal adjustment")
   }
@@ -275,30 +271,20 @@ auto_SA_core <- function(data, dates, take_logs = "auto", detrend = TRUE){
 
   dates <- as.Date(dates)
   ddates <- median(diff.Date(dates))
-  if(ddates >= 28 && ddates <= 31){ #Monthly data
+
+
+  if(ddates >= 32){ #Monthly data or greater
     if(detrend){
-      trend <- loess(data ~ seq(length(data)), span = .1, na.action = na.exclude) #refine parameter selection
+      trend <- loess(data ~ seq(length(data)), span = .9, na.action = na.exclude) #refine parameter selection
       trend <- predict(trend)
       #ts.plot(cbind(trend, data), col = c("red", "blue"))
       y <- data - trend
     }else{
       y <- data
     }
-    dates <- end_of_month(dates)
-    # if(is.numeric(forecast)){ #forecast must be numeric or logical
-    #   fc_dates <- end_of_month(seq.Date(from = first_of_month(tail(dates,1)), by = "month", length.out = forecast)[-1])
-    # }else if(is.logical(forecast)){
-    #   if(forecast){
-    #     fc_dates <- end_of_month(seq.Date(from = first_of_month(tail(dates,1)), by = "month", length.out = 13)[-1])
-    #   }else{
-    #     fc_dates <- NULL
-    #   }
-    # }else{
-    #   fc_dates = NULL
-    # }
+
     #Step (1): select SARMA model
     params <- select_SARMA(y,dates)
-    #est <- seasonal_arma(data = y, dates = dates, fc_dates = fc_dates, order = params$order, seasonal_ar = params$ar_effect, seasonal_ma = params$ma_effect)
 
     #Step (2): Smooth --- need to do the properly at some point
     #Question: will forecasts made on smoothed data perform better since the tail will not be smoothed (i.e. is just filtered)?
@@ -314,14 +300,34 @@ auto_SA_core <- function(data, dates, take_logs = "auto", detrend = TRUE){
     E <- seasonal_arma(y_sa, dates, order = params$order)
     E <- E$E
 
-    # idx <- seq(1,length(dates)) #if fc_dates, params$seas will be longer than y
-    # sa <- params$seas[idx]
-    # sa[sa==0] <- rev_est$seas[sa==0]
-    # params$seas[idx] <- sa
-    # y_sa <- y - sa
-    # cp <- ncol(params$p)
-    # z <- stack_obs(as.matrix(y_sa), cp)
-    # E <- c(rep(0, cp), y_sa[-seq(1,cp)] - params$p%*%z[-nrow(z),])
+    #Step (3): Remove weekday/trading day effects and other exogenous junk (just trading days so far)
+
+  }else if(ddates >= 28 && ddates < 32){ #Monthly data or greater
+    if(detrend){
+      trend <- loess(data ~ seq(length(data)), span = .1, na.action = na.exclude) #refine parameter selection
+      trend <- predict(trend)
+      #ts.plot(cbind(trend, data), col = c("red", "blue"))
+      y <- data - trend
+    }else{
+      y <- data
+    }
+
+    #Step (1): select SARMA model
+    params <- select_SARMA(y,dates)
+
+    #Step (2): Smooth --- need to do the properly at some point
+    #Question: will forecasts made on smoothed data perform better since the tail will not be smoothed (i.e. is just filtered)?
+    initial_vals <- list(p = params$p,
+                         q = params$q,
+                         P = params$P,
+                         Q = params$Q)
+    rev_est <- seasonal_rev_arma(y, dates, order = params$order, seasonal_ar = params$ar_effect, seasonal_ma = params$ma_effect,
+                                 initial_vals = initial_vals)
+    adj_fact <- ave_seas(seas = params$seas, rev_seas = rev_est$seas)
+    y_sa <- y - adj_fact
+
+    E <- seasonal_arma(y_sa, dates, order = params$order)
+    E <- E$E
 
     #Step (3): Remove weekday/trading day effects and other exogenous junk (just trading days so far)
 
@@ -341,7 +347,7 @@ auto_SA_core <- function(data, dates, take_logs = "auto", detrend = TRUE){
 
   if(ddates >= 6 && ddates <= 8){ #Weekly data
     if(detrend){
-      trend <- loess(data ~ seq(length(data)), span = .1, na.action = na.exclude) #refine parameter selection
+      trend <- loess(data ~ seq(length(data)), span = .2, na.action = na.exclude) #refine parameter selection
       trend <- predict(trend)
       #ts.plot(cbind(trend, data), col = c("red", "blue"))
       y <- data - trend
@@ -392,7 +398,7 @@ auto_SA_core <- function(data, dates, take_logs = "auto", detrend = TRUE){
 
   if(ddates == 1){ #daily data
     if(detrend){
-      trend <- loess(data ~ seq(length(data)), span = .1, na.action = na.exclude) #refine parameter selection
+      trend <- loess(data ~ seq(length(data)), span = .5, na.action = na.exclude) #refine parameter selection
       trend <- predict(trend)
       #ts.plot(cbind(trend, data), col = c("red", "blue"))
       y <- data - trend

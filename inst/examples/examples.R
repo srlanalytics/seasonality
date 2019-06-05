@@ -46,7 +46,7 @@ y <- ts(data, start = c(1970,1), frequency = 12)
 library(seasonal)
 
 sa <- seas(y)
-plot(dates[-1], diff(log(SA$data_sa)), type = "l", lwd = 3, col = "lightskyblue1",
+plot(dates[-1], diff(log(SA$data_sa)), type = "l", lwd = 1, col = "blue",
      xlab = "Dates", ylab = "IP")
 lines(dates[-1], diff(log(final(sa))), lwd = 1, col = "red")
 
@@ -69,6 +69,12 @@ aa <- auto.arima(y)
 
 summary(aa) #0.423
 SA$MSE #0.302
+
+
+
+SA <- auto_SA(y, dates)
+
+ts.plot(cbind(y, SA$data_sa), col = c("blue", "red"))
 
 
 #

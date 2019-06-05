@@ -228,6 +228,7 @@ int MonthDays(double year,
 //   return(days);
 // }
 
+
 //return last day for the given month
 // [[Rcpp::export]]
 std::vector<Date> end_of_month(std::vector<Date> date){
@@ -296,6 +297,31 @@ std::vector<Date> first_of_month(std::vector<Date> date){
   for(uword j=0; j<date.size(); j++){
     tmp  = date[j];
     d[j] = Date(tmp.getYear(), tmp.getMonth(), 1);
+  }
+  return(d);
+}
+
+//return last day for the given month
+// [[Rcpp::export]]
+std::vector<Date> end_of_quarter(std::vector<Date> date){
+  std::vector<Date> d(date.size());
+  Rcpp::Date tmp;
+  int days;
+  int mnth;
+  for(uword j=0; j<date.size(); j++){
+    tmp  = date[j];
+    mnth = tmp.getMonth();
+    if(mnth == 1 || mnth == 2){
+      mnth = 3;
+    }else if(mnth == 4 || mnth == 5){
+      mnth = 6;
+    }else if(mnth == 7 || mnth == 8){
+      mnth = 9;
+    }else if(mnth == 10 || mnth == 11){
+      mnth = 12;
+    }
+    days = MonthDays(tmp.getYear(), mnth);
+    d[j] = Date(tmp.getYear(), mnth, days);
   }
   return(d);
 }
