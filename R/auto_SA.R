@@ -272,10 +272,12 @@ auto_SA_core <- function(data, dates, take_logs = "auto", detrend = TRUE){
   dates <- as.Date(dates)
   ddates <- median(diff.Date(dates))
 
+  data <- c(data)
 
-  if(ddates >= 32){ #Monthly data or greater
+
+  if(ddates >= 32){ #greater than monthly
     if(detrend){
-      trend <- loess(data ~ seq(length(data)), span = .9, na.action = na.exclude) #refine parameter selection
+      trend <- loess(data ~ seq(length(data)), span = .09, na.action = na.exclude) #refine parameter selection
       trend <- predict(trend)
       #ts.plot(cbind(trend, data), col = c("red", "blue"))
       y <- data - trend
@@ -337,7 +339,7 @@ auto_SA_core <- function(data, dates, take_logs = "auto", detrend = TRUE){
     trading_days <- scale(trading_days)
     bet <- mean(trading_days*E)
     Enew <- E - bet*trading_days
-    if( (mean(E^2) - mean(Enew^2))/var(y_sa) > .1/sqrt(length(y))){
+    if( (mean(E^2) - mean(Enew^2))/var(y_sa, na.rm = TRUE) > .1/sqrt(length(y))){
       td <- do.call("c",lapply(as.Date(names(params$seas)), FUN = weekdays_in_month)) #this clunky approach accomadates fc_dates
       td <- (td - attr(trading_days, "scaled:center"))/attr(trading_days, "scaled:scale")
       params$seas <- params$seas + bet*td

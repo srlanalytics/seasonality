@@ -240,7 +240,7 @@ select_SARMA <- function(y,dates){
                           initial_vals = initial_tmp)
     SIC2 <- (ucv-est$MSE)/ucv - pen*(sum(order) + length(ar_effect) + length(ma_effect) + 1)/sqrt(length(y))
     initial_tmp$P <- c(initial_tmp$P, 0)
-    est  <- seasonal_arma(y, dates, order = order, seasonal_ar = c(ma_effect, "cny"), seasonal_ma = c(ma_effect, "cny"),
+    est  <- seasonal_arma(y, dates, order = order, seasonal_ar = c(ar_effect, "cny"), seasonal_ma = c(ma_effect, "cny"),
                           initial_vals = initial_tmp)
     SIC3 <- (ucv-est$MSE)/ucv - pen*(sum(order) + length(ar_effect) + length(ma_effect) + 2)/sqrt(length(y))
 
@@ -270,7 +270,7 @@ select_SARMA <- function(y,dates){
     est  <- seasonal_arma(y, dates, order = order, seasonal_ar = ar_effect, seasonal_ma = c(ma_effect, "diwali"), initial_vals = initial_tmp)
     SIC2 <- (ucv-est$MSE)/ucv - pen*(sum(order) + length(ar_effect) + length(ma_effect) + 1)/sqrt(length(y))
     initial_tmp$P <- c(initial_tmp$P, 0)
-    est  <- seasonal_arma(y, dates, order = order, seasonal_ar = c(ma_effect, "diwali"), seasonal_ma = c(ma_effect, "diwali"), initial_vals = initial_tmp)
+    est  <- seasonal_arma(y, dates, order = order, seasonal_ar = c(ar_effect, "diwali"), seasonal_ma = c(ma_effect, "diwali"), initial_vals = initial_tmp)
     SIC3 <- (ucv-est$MSE)/ucv - pen*(sum(order) + length(ar_effect) + length(ma_effect) + 2)/sqrt(length(y))
 
     if(SIC1>SIC0 && SIC1>SIC2 && SIC1>SIC3){
@@ -301,7 +301,7 @@ select_SARMA <- function(y,dates){
     est  <- seasonal_arma(y, dates, order = order, seasonal_ar = ar_effect, seasonal_ma = c(ma_effect, "easter"), initial_vals = initial_tmp)
     SIC2 <- (ucv-est$MSE)/ucv - pen*(sum(order) + length(ar_effect) + length(ma_effect) + 1)/sqrt(length(y))
     initial_tmp$P <- c(initial_tmp$P, 0)
-    est  <- seasonal_arma(y, dates, order = order, seasonal_ar = c(ma_effect, "easter"), seasonal_ma = c(ma_effect, "easter"), initial_vals = initial_tmp)
+    est  <- seasonal_arma(y, dates, order = order, seasonal_ar = c(ar_effect, "easter"), seasonal_ma = c(ma_effect, "easter"), initial_vals = initial_tmp)
     SIC3 <- (ucv-est$MSE)/ucv - pen*(sum(order) + length(ar_effect) + length(ma_effect) + 2)/sqrt(length(y))
 
     if(SIC1>SIC0 && SIC1>SIC2 && SIC1>SIC3){
@@ -327,7 +327,7 @@ select_SARMA <- function(y,dates){
     SIC1 <- (ucv-est$MSE)/ucv - pen*(sum(order) + length(ar_effect) + length(ma_effect) + 1)/sqrt(length(y))
     est  <- seasonal_arma(y, dates, order = order, seasonal_ar = ar_effect, seasonal_ma = c(ma_effect, "black_friday"))
     SIC2 <- (ucv-est$MSE)/ucv - pen*(sum(order) + length(ar_effect) + length(ma_effect) + 1)/sqrt(length(y))
-    est  <- seasonal_arma(y, dates, order = order, seasonal_ar = c(ma_effect, "black_friday"), seasonal_ma = c(ma_effect, "black_friday"))
+    est  <- seasonal_arma(y, dates, order = order, seasonal_ar = c(ar_effect, "black_friday"), seasonal_ma = c(ma_effect, "black_friday"))
     SIC3 <- (ucv-est$MSE)/ucv - pen*(sum(order) + length(ar_effect) + length(ma_effect) + 2)/sqrt(length(y))
 
     if(SIC1>SIC0 && SIC1>SIC2 && SIC1>SIC3){
