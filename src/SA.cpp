@@ -235,10 +235,12 @@ std::vector<Date> end_of_month(std::vector<Date> date){
   std::vector<Date> d(date.size());
   Rcpp::Date tmp;
   int days;
-  for(uword j=0; j<date.size(); j++){
-    tmp  = date[j];
-    days = MonthDays(tmp.getYear(), tmp.getMonth());
-    d[j] = Date(tmp.getYear(), tmp.getMonth(), days);
+  if(date.size()>0){
+    for(uword j=0; j<date.size(); j++){
+      tmp  = date[j];
+      days = MonthDays(tmp.getYear(), tmp.getMonth());
+      d[j] = Date(tmp.getYear(), tmp.getMonth(), days);
+    }
   }
   return(d);
 }
