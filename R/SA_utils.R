@@ -42,6 +42,19 @@ weekdays_in_month <- function(date){
   return(count)
 }
 
+closest_weekday <- function(dte, weekday = "Sunday"){
+  sq   <- c(seq.Date(from = dte-6, by = 1, length.out = 6), seq.Date(from = dte, by = 1, length.out = 7))
+  pos  <- (which(weekdays(sq) == weekday) - 7) #position of Fridays relative to the current date
+  date_out <- sq[ pos[which.min(abs(pos))]+7 ]
+  return(date_out)
+}
+
+previous_weekday <- function(dte, weekday = "Sunday"){
+  sq   <- seq.Date(from = dte-6, by = 1, length.out = 7)
+  date_out <- sq[which(weekdays(sq) == weekday)]
+  return(date_out)
+}
+
 # auto detect frequency
 get_freq_dates <- function(y, dates) {
   out <- median(diff(dates[which(!is.na(y))]))
