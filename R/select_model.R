@@ -6,13 +6,20 @@ holiday_range <- function(hdate, dates, before = 30, after = 30){
   return(out_dates)
 }
 
-min_diff_name <- function(this_date_name, last_year_names) which.min(abs(as.numeric(last_year_names) - as.numeric(this_date_name) ))
+min_diff_name <- function(this_date_name, last_year_names) out <- which.min(abs(as.numeric(last_year_names) - as.numeric(this_date_name) ))
 
-previous_year_holiday <- function(idx, Hdates){
-  this_year <- Hdates[[idx]]
-  last_year <- Hdates[[idx-1]]
-  out <- last_year[sapply(names(this_year), FUN = min_diff_name, last_year_names = names(last_year))]
-  return(out)
+
+previous_year_holiday <- function(idx, Hdates_narrow, Hdates_wide){
+  this_year <- Hdates_narrow[[idx]]
+  last_year <- Hdates_wide[[idx-1]]
+  #names are the number of days the date falls either before (-) or after the holiday
+  if(length(this_year) == 0 || length(last_year) == 0){
+    return(NULL)
+  }else{
+    out <- last_year[sapply(names(this_year), FUN = min_diff_name, last_year_names = names(last_year))]
+    names(out) <- this_year
+    return(out)
+  }
 }
 
 which_is_equal <- function(x,y) which(y==x) #x - single value, y - vector to compare to
@@ -44,48 +51,48 @@ make_lead_index <- function(dates, effects){
   if("cny"%in%effects){
     tmp <- rep(0, length(dates))
     hdates <- rev(cny[cny>= min(dates) & cny<=max(dates)])
-    Hdates <- lapply(hdates, FUN = holiday_range, dates = dates)
-    previous_year <- do.call("c",  lapply(seq(2,length(Hdates)), FUN = previous_year_holiday, Hdates = Hdates))
-    this_year <-  do.call("c", Hdates)[-seq(1,length(Hdates[[1]]))]
+    Hdates_narrow <- lapply(hdates, FUN = holiday_range, dates = dates)
+    Hdates_wide   <- lapply(hdates, FUN = holiday_range, dates = dates, before = 60, after = 60)
+    previous_year <- do.call("c",  lapply(seq(2,length(hdates)), FUN = previous_year_holiday, Hdates_narrow = Hdates_narrow, Hdates_wide = Hdates_wide))
     #if(is.unsorted(dates, na.rm = TRUE) || is.unsorted(this_year, na.rm = TRUE) || is.unsorted(previous_year, na.rm = TRUE)) stop("Dates must be sorted")
-    tmp[sapply(this_year, FUN = which_is_equal, y = dates)] <- sapply(previous_year, FUN = which_is_equal, y = dates)
+    tmp[sapply(as.Date(names(previous_year)), FUN = which_is_equal, y = dates)] <- sapply(previous_year, FUN = which_is_equal, y = dates)
     lags <- cbind(lags, tmp) #R indexing
   }
   if("easter"%in%effects){
     tmp <- rep(0, length(dates))
     hdates <- rev(easter[easter>= min(dates) & easter<=max(dates)])
     if(abs(median(diff(dates)))==31){
-      Hdates <- lapply(hdates, FUN = holiday_range, dates = dates, before = 30, after = 30)
+      Hdates_narrow <- lapply(hdates, FUN = holiday_range, dates = dates, before = 30, after = 30)
+      Hdates_wide <- lapply(hdates, FUN = holiday_range, dates = dates, before = 60, after = 60)
     }else{
-      Hdates <- lapply(hdates, FUN = holiday_range, dates = dates, before = 7, after = 7)
+      Hdates_narrow <- lapply(hdates, FUN = holiday_range, dates = dates, before = 7, after = 7)
+      Hdates_wide <- lapply(hdates, FUN = holiday_range, dates = dates, before = 14, after = 14)
     }
-    previous_year <- do.call("c",  lapply(seq(2,length(Hdates)), FUN = previous_year_holiday, Hdates = Hdates))
-    this_year <-  do.call("c", Hdates)[-seq(1,length(Hdates[[1]]))]
+    previous_year <- do.call("c",  lapply(seq(2,length(hdates)), FUN = previous_year_holiday, Hdates_narrow = Hdates_narrow, Hdates_wide = Hdates_wide))
     #if(is.unsorted(dates, na.rm = TRUE) || is.unsorted(this_year, na.rm = TRUE) || is.unsorted(previous_year, na.rm = TRUE)) stop("Dates must be sorted")
-    tmp[sapply(this_year, FUN = which_is_equal, y = dates)] <- sapply(previous_year, FUN = which_is_equal, y = dates)
+    tmp[sapply(as.Date(names(previous_year)), FUN = which_is_equal, y = dates)] <- sapply(previous_year, FUN = which_is_equal, y = dates)
     lags <- cbind(lags, tmp) #R indexing
   }
   if("diwali"%in%effects){
     tmp <- rep(0, length(dates))
     hdates <- rev(diwali[diwali>= min(dates) & diwali<=max(dates)])
-    Hdates <- lapply(hdates, FUN = holiday_range, dates = dates)
-    previous_year <- do.call("c",  lapply(seq(2,length(Hdates)), FUN = previous_year_holiday, Hdates = Hdates))
-    this_year <-  do.call("c", Hdates)[-seq(1,length(Hdates[[1]]))]
+    Hdates_narrow <- lapply(hdates, FUN = holiday_range, dates = dates)
+    Hdates_wide   <- lapply(hdates, FUN = holiday_range, dates = dates, before = 60, after = 60)
+    previous_year <- do.call("c",  lapply(seq(2,length(hdates)), FUN = previous_year_holiday, Hdates_narrow = Hdates_narrow, Hdates_wide = Hdates_wide))
     #if(is.unsorted(dates, na.rm = TRUE) || is.unsorted(this_year, na.rm = TRUE) || is.unsorted(previous_year, na.rm = TRUE)) stop("Dates must be sorted")
-    tmp[sapply(this_year, FUN = which_is_equal, y = dates)] <- sapply(previous_year, FUN = which_is_equal, y = dates)
+    tmp[sapply(as.Date(names(previous_year)), FUN = which_is_equal, y = dates)] <- sapply(previous_year, FUN = which_is_equal, y = dates)
     lags <- cbind(lags, tmp) #R indexing
   }
   if("black_friday"%in%effects){
     tmp <- rep(0, length(dates))
     hdates <- rev(black_friday[black_friday>= min(dates) & black_friday<=max(dates)])
-    Hdates <- lapply(hdates, FUN = holiday_range, dates = dates, before = 6, after = 6)
-    previous_year <- do.call("c",  lapply(seq(2,length(Hdates)), FUN = previous_year_holiday, Hdates = Hdates))
-    this_year <-  do.call("c", Hdates)[-seq(1,length(Hdates[[1]]))]
+    Hdates_narrow <- lapply(hdates, FUN = holiday_range, dates = dates, before = 6, after = 6)
+    Hdates_wide <- lapply(hdates, FUN = holiday_range, dates = dates, before = 12, after = 12)
+    previous_year <- do.call("c",  lapply(seq(2,length(hdates)), FUN = previous_year_holiday, Hdates_narrow = Hdates_narrow, Hdates_wide = Hdates_wide))
     #if(is.unsorted(dates, na.rm = TRUE) || is.unsorted(this_year, na.rm = TRUE) || is.unsorted(previous_year, na.rm = TRUE)) stop("Dates must be sorted")
-    tmp[sapply(this_year, FUN = which_is_equal, y = dates)] <- sapply(previous_year, FUN = which_is_equal, y = dates)
+    tmp[sapply(as.Date(names(previous_year)), FUN = which_is_equal, y = dates)] <- sapply(previous_year, FUN = which_is_equal, y = dates)
     lags <- cbind(lags, tmp) #R indexing
   }
-
   return(lags) #keep R indexing
 }
 
@@ -115,48 +122,48 @@ make_lag_index <- function(dates, effects){
   if("cny"%in%effects){
     tmp <- rep(0, length(dates))
     hdates <- cny[cny>= min(dates) & cny<=max(dates)]
-    Hdates <- lapply(hdates, FUN = holiday_range, dates = dates)
-    previous_year <- do.call("c",  lapply(seq(2,length(Hdates)), FUN = previous_year_holiday, Hdates = Hdates))
-    this_year <-  do.call("c", Hdates)[-seq(1,length(Hdates[[1]]))]
+    Hdates_narrow <- lapply(hdates, FUN = holiday_range, dates = dates)
+    Hdates_wide   <- lapply(hdates, FUN = holiday_range, dates = dates, before = 60, after = 60)
+    previous_year <- do.call("c",  lapply(seq(2,length(hdates)), FUN = previous_year_holiday, Hdates_narrow = Hdates_narrow, Hdates_wide = Hdates_wide))
     #if(is.unsorted(dates, na.rm = TRUE) || is.unsorted(this_year, na.rm = TRUE) || is.unsorted(previous_year, na.rm = TRUE)) stop("Dates must be sorted")
-    tmp[sapply(this_year, FUN = which_is_equal, y = dates)] <- sapply(previous_year, FUN = which_is_equal, y = dates)
+    tmp[sapply(as.Date(names(previous_year)), FUN = which_is_equal, y = dates)] <- sapply(previous_year, FUN = which_is_equal, y = dates)
     lags <- cbind(lags, tmp) #R indexing
   }
   if("easter"%in%effects){
     tmp <- rep(0, length(dates))
     hdates <- easter[easter>= min(dates) & easter<=max(dates)]
     if(median(diff(dates))==31){
-      Hdates <- lapply(hdates, FUN = holiday_range, dates = dates, before = 30, after = 30)
+      Hdates_narrow <- lapply(hdates, FUN = holiday_range, dates = dates, before = 30, after = 30)
+      Hdates_wide <- lapply(hdates, FUN = holiday_range, dates = dates, before = 60, after = 60)
     }else{
-      Hdates <- lapply(hdates, FUN = holiday_range, dates = dates, before = 7, after = 7)
+      Hdates_narrow <- lapply(hdates, FUN = holiday_range, dates = dates, before = 7, after = 7)
+      Hdates_wide <- lapply(hdates, FUN = holiday_range, dates = dates, before = 14, after = 14)
     }
-    previous_year <- do.call("c",  lapply(seq(2,length(Hdates)), FUN = previous_year_holiday, Hdates = Hdates))
-    this_year <-  do.call("c", Hdates)[-seq(1,length(Hdates[[1]]))]
+    previous_year <- do.call("c",  lapply(seq(2,length(hdates)), FUN = previous_year_holiday, Hdates_narrow = Hdates_narrow, Hdates_wide = Hdates_wide))
     #if(is.unsorted(dates, na.rm = TRUE) || is.unsorted(this_year, na.rm = TRUE) || is.unsorted(previous_year, na.rm = TRUE)) stop("Dates must be sorted")
-    tmp[sapply(this_year, FUN = which_is_equal, y = dates)] <- sapply(previous_year, FUN = which_is_equal, y = dates)
+    tmp[sapply(as.Date(names(previous_year)), FUN = which_is_equal, y = dates)] <- sapply(previous_year, FUN = which_is_equal, y = dates)
     lags <- cbind(lags, tmp) #R indexing
   }
   if("diwali"%in%effects){
     tmp <- rep(0, length(dates))
     hdates <- diwali[diwali>= min(dates) & diwali<=max(dates)]
-    Hdates <- lapply(hdates, FUN = holiday_range, dates = dates)
-    previous_year <- do.call("c",  lapply(seq(2,length(Hdates)), FUN = previous_year_holiday, Hdates = Hdates))
-    this_year <-  do.call("c", Hdates)[-seq(1,length(Hdates[[1]]))]
+    Hdates_narrow <- lapply(hdates, FUN = holiday_range, dates = dates)
+    Hdates_wide   <- lapply(hdates, FUN = holiday_range, dates = dates, before = 60, after = 60)
+    previous_year <- do.call("c",  lapply(seq(2,length(hdates)), FUN = previous_year_holiday, Hdates_narrow = Hdates_narrow, Hdates_wide = Hdates_wide))
     #if(is.unsorted(dates, na.rm = TRUE) || is.unsorted(this_year, na.rm = TRUE) || is.unsorted(previous_year, na.rm = TRUE)) stop("Dates must be sorted")
-    tmp[sapply(this_year, FUN = which_is_equal, y = dates)] <- sapply(previous_year, FUN = which_is_equal, y = dates)
+    tmp[sapply(as.Date(names(previous_year)), FUN = which_is_equal, y = dates)] <- sapply(previous_year, FUN = which_is_equal, y = dates)
     lags <- cbind(lags, tmp) #R indexing
   }
   if("black_friday"%in%effects){
     tmp <- rep(0, length(dates))
     hdates <- black_friday[black_friday>= min(dates) & black_friday<=max(dates)]
-    Hdates <- lapply(hdates, FUN = holiday_range, dates = dates, before = 6, after = 6)
-    previous_year <- do.call("c",  lapply(seq(2,length(Hdates)), FUN = previous_year_holiday, Hdates = Hdates))
-    this_year <-  do.call("c", Hdates)[-seq(1,length(Hdates[[1]]))]
+    Hdates_narrow <- lapply(hdates, FUN = holiday_range, dates = dates, before = 6, after = 6)
+    Hdates_wide <- lapply(hdates, FUN = holiday_range, dates = dates, before = 12, after = 12)
+    previous_year <- do.call("c",  lapply(seq(2,length(hdates)), FUN = previous_year_holiday, Hdates_narrow = Hdates_narrow, Hdates_wide = Hdates_wide))
     #if(is.unsorted(dates, na.rm = TRUE) || is.unsorted(this_year, na.rm = TRUE) || is.unsorted(previous_year, na.rm = TRUE)) stop("Dates must be sorted")
-    tmp[sapply(this_year, FUN = which_is_equal, y = dates)] <- sapply(previous_year, FUN = which_is_equal, y = dates)
+    tmp[sapply(as.Date(names(previous_year)), FUN = which_is_equal, y = dates)] <- sapply(previous_year, FUN = which_is_equal, y = dates)
     lags <- cbind(lags, tmp) #R indexing
   }
-
   return(lags) #keep R indexing
 }
 
@@ -228,6 +235,8 @@ select_SARMA <- function(y,dates){
   ma_effect_new <- ma_effect
 
   if(median(diff(dates))<32){
+
+    #cny
 
     initial_tmp <- initial_vals
     initial_tmp$P <- c(initial_tmp$P, 0)

@@ -347,7 +347,7 @@ auto_SA_core <- function(data, dates, take_logs = "auto", detrend = TRUE){
     }
   } #If data is monthly
 
-  if(ddates >= 6 && ddates <= 8){ #Weekly data
+  if(ddates >= 6 && ddates <= 15){ #Weekly data or bi-weekly
     if(detrend){
       trend <- loess(data ~ seq(length(data)), span = .2, na.action = na.exclude) #refine parameter selection
       trend <- predict(trend)
