@@ -4,9 +4,7 @@
 .Ruserdata
 src/*.o
 src/*.so
-src/*.dll
 src/seasonality.o
 src/RcppExports.o
-src/seasonality.dll
 *.o
 
