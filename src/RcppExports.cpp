@@ -228,6 +228,17 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// first_previous_quarter
+std::vector<Date> first_previous_quarter(std::vector<Date> date);
+RcppExport SEXP _seasonality_first_previous_quarter(SEXP dateSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< std::vector<Date> >::type date(dateSEXP);
+    rcpp_result_gen = Rcpp::wrap(first_previous_quarter(date));
+    return rcpp_result_gen;
+END_RCPP
+}
 // month_diff
 arma::uvec month_diff(std::vector<Date> first_date, std::vector<Date> second_date);
 RcppExport SEXP _seasonality_month_diff(SEXP first_dateSEXP, SEXP second_dateSEXP) {
@@ -326,6 +337,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_seasonality_end_of_month_date", (DL_FUNC) &_seasonality_end_of_month_date, 1},
     {"_seasonality_first_of_month", (DL_FUNC) &_seasonality_first_of_month, 1},
     {"_seasonality_end_of_quarter", (DL_FUNC) &_seasonality_end_of_quarter, 1},
+    {"_seasonality_first_previous_quarter", (DL_FUNC) &_seasonality_first_previous_quarter, 1},
     {"_seasonality_month_diff", (DL_FUNC) &_seasonality_month_diff, 2},
     {"_seasonality_ps_week", (DL_FUNC) &_seasonality_ps_week, 1},
     {"_seasonality_pseudo_weekly_sequence", (DL_FUNC) &_seasonality_pseudo_weekly_sequence, 3},

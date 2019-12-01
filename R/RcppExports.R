@@ -77,6 +77,10 @@ end_of_quarter <- function(date) {
     .Call('_seasonality_end_of_quarter', PACKAGE = 'seasonality', date)
 }
 
+first_previous_quarter <- function(date) {
+    .Call('_seasonality_first_previous_quarter', PACKAGE = 'seasonality', date)
+}
+
 month_diff <- function(first_date, second_date) {
     .Call('_seasonality_month_diff', PACKAGE = 'seasonality', first_date, second_date)
 }

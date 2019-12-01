@@ -303,7 +303,7 @@ std::vector<Date> first_of_month(std::vector<Date> date){
   return(d);
 }
 
-//return last day for the given month
+//return last day for the given quarter
 // [[Rcpp::export]]
 std::vector<Date> end_of_quarter(std::vector<Date> date){
   std::vector<Date> d(date.size());
@@ -324,6 +324,32 @@ std::vector<Date> end_of_quarter(std::vector<Date> date){
     }
     days = MonthDays(tmp.getYear(), mnth);
     d[j] = Date(tmp.getYear(), mnth, days);
+  }
+  return(d);
+}
+
+//return first day for previous quarter
+// [[Rcpp::export]]
+std::vector<Date> first_previous_quarter(std::vector<Date> date){
+  std::vector<Date> d(date.size());
+  Rcpp::Date tmp;
+  int yr;
+  int mnth;
+  for(uword j=0; j<date.size(); j++){
+    tmp  = date[j];
+    mnth = tmp.getMonth();
+    yr = tmp.getYear();
+    if(mnth == 1 || mnth == 2 || mnth == 3){
+      mnth = 10;
+      yr = yr-1;
+    }else if(mnth == 4 || mnth == 5 || mnth == 6){
+      mnth = 1;
+    }else if(mnth == 7 || mnth == 8 || mnth == 9){
+      mnth = 4;
+    }else if(mnth == 10 || mnth == 11 || mnth == 12){
+      mnth = 7;
+    }
+    d[j] = Date(yr, mnth, 1);
   }
   return(d);
 }
