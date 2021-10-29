@@ -466,7 +466,7 @@ List SARMA(arma::vec Y, //univariate data
             arma::rowvec q, //MA parameters
             arma::rowvec P, //seasonal AR parameters
             arma::rowvec Q, //seasonal MA parameters
-            arma::umat P_lag, //seasonal AR lags. field format allows different lenghts at each date to account for holiday effects
+            arma::umat P_lag, //seasonal AR lags. field format allows different lengths at each date to account for holiday effects
             arma::umat Q_lag){ //seasonal MA lags
 
   // first "throw away" observation is a zero.

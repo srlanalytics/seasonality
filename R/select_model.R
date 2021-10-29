@@ -167,7 +167,6 @@ make_lag_index <- function(dates, effects){
   return(lags) #keep R indexing
 }
 
-
 select_SARMA <- function(y,dates){
 
   ar_effect <- NULL #need to add holidays and such

@@ -272,8 +272,7 @@ auto_SA_core <- function(data, dates, take_logs = "auto", detrend = TRUE){
   dates <- as.Date(dates)
   ddates <- median(diff.Date(dates))
 
-  data <- c(data)
-
+  data <- unclass(data) # in case of anything funny like ts()
 
   if(ddates >= 32){ #greater than monthly
     if(detrend){
@@ -304,7 +303,7 @@ auto_SA_core <- function(data, dates, take_logs = "auto", detrend = TRUE){
 
     #Step (3): Remove weekday/trading day effects and other exogenous junk (just trading days so far)
 
-  }else if(ddates >= 28 && ddates < 32){ #Monthly data or greater
+  }else if(ddates >= 28 && ddates < 32){ #Monthly data
     if(detrend){
       trend <- loess(data ~ seq(length(data)), span = .1, na.action = na.exclude) #refine parameter selection
       trend <- predict(trend)

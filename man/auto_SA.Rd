@@ -4,14 +4,12 @@
 \alias{auto_SA}
 \title{Automatically seasonally adjust high frequency or irregular frequency data}
 \usage{
-auto_SA(data, dates = NULL, forecast = FALSE)
+auto_SA(data, dates = NULL, take_logs = "auto", detrend = TRUE)
 }
 \arguments{
 \item{data}{data in matrix format with time in rows}
 
 \item{dates}{dates corresponding to data points if data is not ts_boxable()}
-
-\item{forecast}{T/F return forecasted adjustment factors}
 }
 \description{
 Automatically seasonally adjust high frequency or irregular frequency data

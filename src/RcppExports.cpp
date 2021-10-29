@@ -6,6 +6,11 @@
 
 using namespace Rcpp;
 
+#ifdef RCPP_USE_GLOBAL_ROSTREAM
+Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
+Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
+#endif
+
 // stack_obs
 arma:: mat stack_obs(arma::mat nn, arma::uword p, arma::uword r);
 RcppExport SEXP _seasonality_stack_obs(SEXP nnSEXP, SEXP pSEXP, SEXP rSEXP) {
